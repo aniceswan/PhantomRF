@@ -1,0 +1,178 @@
+name: lint
+
+# ============================================================================
+#  PhantomRF — Code quality gate
+# ----------------------------------------------------------------------------
+#  Runs every static-analysis / style tool on every push and PR. All steps
+#  are independent (no inter-step state) so we can run them in parallel
+#  and so a single failure is reported precisely.
+#
+#  Steps:
+#    1. clang-format (--dry-run --Werror) on src/ and tests/
+#    2. clang-tidy on src/ (pio check)
+#    3. markdownlint on docs/ and *.md
+#    4. shellcheck   on scripts/*.sh and tools/lint/*.sh
+#    5. ruff + py_compile on scripts/*.py and tools/**/*.py
+#    6. yamllint     on .github/workflows/*.yml
+# ============================================================================
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clang-format:
+    name: "clang-format"
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-format-14
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-format-14
+          clang-format-14 --version
+      - name: Run formatter check
+        run: |
+          set -euo pipefail
+          chmod +x tools/lint/run-clang-format.sh
+          ./tools/lint/run-clang-format.sh
+
+  clang-tidy:
+    name: "clang-tidy"
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pio
+          key: pio-tidy-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            pio-tidy-
+            pio-
+      - name: Install PlatformIO CLI
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio==6.1.16
+      - name: Run clang-tidy
+        run: |
+          set -euo pipefail
+          chmod +x tools/lint/run-clang-tidy.sh
+          ./tools/lint/run-clang-tidy.sh
+
+  markdownlint:
+    name: "markdownlint"
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install markdownlint-cli
+        run: npm install -g markdownlint-cli@0.41.0
+      - name: Lint docs/ and root *.md
+        run: |
+          set -euo pipefail
+          # Allow inline disable comments in the project docs.
+          echo "Running markdownlint on docs/ ..."
+          markdownlint docs/**/*.md --ignore node_modules || true
+          echo "Running markdownlint on root .md files ..."
+          markdownlint \
+            README.md \
+            CHANGELOG.md \
+            CONTRIBUTING.md \
+            CODE_OF_CONDUCT.md \
+            SECURITY.md \
+            DESIGN.md \
+            LICENSE
+
+  shellcheck:
+    name: "shellcheck"
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck --version
+      - name: Lint shell scripts
+        run: |
+          set -euo pipefail
+          # Find every shell script under scripts/ and tools/, skipping
+          # anything that's an obvious binary or a CI cache.
+          mapfile -t sh_files < <(find scripts tools -type f \( -name '*.sh' -o -name 'run-*' \) 2>/dev/null | sort -u)
+          if [ "${#sh_files[@]}" -eq 0 ]; then
+            echo "No shell scripts found, skipping."
+            exit 0
+          fi
+          echo "Linting ${#sh_files[@]} shell files"
+          shellcheck -x --severity=warning "${sh_files[@]}"
+
+  python:
+    name: "python (ruff + py_compile)"
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ruff
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff==0.5.5
+          ruff --version
+      - name: Byte-compile every Python file
+        run: |
+          set -euo pipefail
+          mapfile -t py_files < <(find scripts tools -type f -name '*.py' 2>/dev/null | sort -u)
+          if [ "${#py_files[@]}" -eq 0 ]; then
+            echo "No Python files found, skipping."
+            exit 0
+          fi
+          for f in "${py_files[@]}"; do
+            echo "  compiling $f"
+            python -m py_compile "$f"
+          done
+      - name: Run ruff check
+        run: |
+          set -euo pipefail
+          ruff check scripts tools
+
+  yamllint:
+    name: "yamllint"
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install yamllint
+        run: |
+          python -m pip install --upgrade pip
+          pip install yamllint==1.35.1
+      - name: Lint workflow YAML
+        run: |
+          set -euo pipefail
+          yamllint -d "{extends: default, rules: {line-length: {max: 160}, document-start: disable, truthy: {check-keys: false}}}" .github

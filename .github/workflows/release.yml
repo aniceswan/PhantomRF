@@ -1,0 +1,262 @@
+name: release
+
+# ============================================================================
+#  PhantomRF — Release pipeline
+# ----------------------------------------------------------------------------
+#  Triggered on every tag push matching the `v*` pattern (e.g. v0.2.0,
+#  v1.0.0-rc.1). Builds every PlatformIO environment, runs the post-build
+#  hook to produce UF2 / SHA256 / manifest, attaches all artifacts to a
+#  GitHub Release with notes derived from CHANGELOG.md, and publishes the
+#  generated documentation to the gh-pages branch.
+# ============================================================================
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.2.0). Leave blank for the current HEAD."
+        required: false
+        default: ""
+
+permissions:
+  contents: write   # we need to publish releases and push to gh-pages
+  pages: write
+  id-token: write   # for the OIDC trusted publishing when deploying pages
+
+# Allow only one release at a time
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # --------------------------------------------------------------------------
+  # 1. Build every environment and emit dist/<env>/*.bin + .uf2
+  # --------------------------------------------------------------------------
+  build:
+    name: "build (${{ matrix.env }})"
+    runs-on: ubuntu-22.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - esp32s3-n16r8
+          - esp32s3-n8r2
+          - esp32s3-n8
+          - esp32-classic
+          - esp32c3
+          - esp32s2
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          # We need write access to push a tag-back to update the release
+          # body with the dist URLs.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pio
+          key: pio-release-${{ matrix.env }}-${{ github.ref_name }}
+          restore-keys: |
+            pio-release-${{ matrix.env }}-
+
+      - name: Install PlatformIO CLI
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio==6.1.16
+          pio --version
+
+      - name: Build firmware for ${{ matrix.env }}
+        run: |
+          set -euo pipefail
+          pio run -e "${{ matrix.env }}" --verbose
+          # post_build.py is wired up via extra_scripts in platformio.ini
+          # and runs automatically. We run it once more in CLI mode here
+          # so the dist/ directory is present even if the SCons hook was
+          # skipped for any reason.
+          python3 scripts/post_build.py --env "${{ matrix.env }}"
+
+      - name: Verify dist/ contents
+        run: |
+          set -euo pipefail
+          if [ ! -d dist ]; then
+            echo "::error::dist/ was not created by post_build.py"
+            exit 1
+          fi
+          ls -la dist/
+          # Sanity-check: every UF2 file should be a multiple of 512 bytes
+          for uf2 in dist/*.uf2; do
+            [ -f "$uf2" ] || continue
+            size=$(stat -c '%s' "$uf2")
+            if [ $((size % 512)) -ne 0 ]; then
+              echo "::error::$uf2 size $size is not a multiple of 512"
+              exit 1
+            fi
+          done
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.env }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 90
+
+  # --------------------------------------------------------------------------
+  # 2. Combine all dist outputs, compute combined SHA-256 manifest and create
+  #    a GitHub Release.
+  # --------------------------------------------------------------------------
+  publish:
+    name: "publish release"
+    runs-on: ubuntu-22.04
+    needs: build
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download all dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: _artifacts
+          merge-multiple: true
+
+      - name: Stage combined dist/
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist
+          # The CI builds each env in its own runner, so each dist-* /
+          # artifact contains a `dist/<files>` directory. Flatten them.
+          for d in _artifacts/dist-*; do
+            [ -d "$d/dist" ] || continue
+            cp -v "$d/dist"/* dist/
+          done
+          ls -la dist/
+
+      - name: Compute SHA-256 manifest
+        run: |
+          set -euo pipefail
+          ( cd dist && find . -type f \( -name '*.bin' -o -name '*.uf2' \) \
+              -print0 | sort -z | xargs -0 sha256sum ) > dist/SHA256SUMS
+          cat dist/SHA256SUMS
+
+      - name: Read CHANGELOG section
+        id: changelog
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          # Strip the leading 'v' for the section heading.
+          ver="${tag#v}"
+          python3 - <<PY
+          import re, pathlib
+          tag = "${{ github.ref_name }}"
+          ver = tag.lstrip("v")
+          text = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+          # Find a heading like "## [0.2.0]" or "## 0.2.0" (with optional
+          # date) immediately before the next "## " heading.
+          pattern = re.compile(
+              r"^##\s+\[?" + re.escape(ver) + r"\]?[^\n]*\n(.*?)(?=^##\s+|\Z)",
+              re.MULTILINE | re.DOTALL,
+          )
+          m = pattern.search(text)
+          section = m.group(1).strip() if m else ""
+          if not section:
+              section = "_No changelog section found for " + ver + "._"
+          pathlib.Path(".release-notes.md").write_text(section, encoding="utf-8")
+          print("--- changelog section ---")
+          print(section)
+          PY
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "PhantomRF ${{ github.ref_name }}"
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') }}
+          generate_release_notes: false
+          body_path: .release-notes.md
+          fail_on_unmatched_files: false
+          files: |
+            dist/*.bin
+            dist/*.uf2
+            dist/*.sha256
+            dist/manifest.json
+            dist/SHA256SUMS
+
+  # --------------------------------------------------------------------------
+  # 3. Publish documentation site to the gh-pages branch.
+  # --------------------------------------------------------------------------
+  docs:
+    name: "publish docs"
+    runs-on: ubuntu-22.04
+    needs: publish
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install mkdocs
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs==1.6.1 mkdocs-material==9.5.31
+
+      - name: Build site
+        run: |
+          set -euo pipefail
+          # If the docs/ tree is not yet wired up with mkdocs.yml we just
+          # copy the docs/ tree as-is to ./site, so the gh-pages branch
+          # always has *something* useful.
+          if [ -f mkdocs.yml ]; then
+            mkdocs build --strict
+          else
+            mkdir -p site
+            cp -R docs/. site/
+            echo "<h1>PhantomRF docs</h1>" > site/index.html
+          fi
+          ls site/
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          publish_branch: gh-pages
+          # Keep history of releases; don't nuke unrelated commits.
+          force_orphan: false
+          keep_files: false
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          commit_message: "docs: publish ${{ github.ref_name }}"
+          tag_name: ${{ github.ref_name }}

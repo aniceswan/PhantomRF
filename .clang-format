@@ -1,0 +1,116 @@
+# =============================================================================
+#  PhantomRF — clang-format configuration
+# ----------------------------------------------------------------------------
+#  This file is consumed automatically by clang-format-14+ (and any
+#  editor integration that shells out to it: VSCode C/C++ extension,
+#  CLion, vim-youcompleteme, etc.). The base style is LLVM, with the
+#  project-specific tweaks documented below.
+#
+#  Run `./tools/lint/run-clang-format.sh` to verify that every file
+#  matches this style; CI runs the same script on every push and PR.
+# =============================================================================
+
+---
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++17
+
+# --- indentation & line width -----------------------------------------------
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+ContinuationIndentWidth: 4
+NamespaceIndentation: None
+IndentCaseLabels: false
+
+# --- braces -----------------------------------------------------------------
+# Attach opening braces to the statement (`if (x) {`, not `if (x)\n{`).
+# This is the LLVM default but we make it explicit because some IDEs
+# (CLion, Eclipse) like to override it.
+BreakBeforeBraces: Attach
+Cpp11BracedListStyle: true
+
+# --- single-line functions --------------------------------------------------
+# Allow `void f() { return; }` on a single line, but do not collapse
+# empty functions or functions that contain control flow.
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+
+# --- includes ---------------------------------------------------------------
+# Group includes into "project" / "library" / "C++ stdlib" / "C stdlib" /
+# "other" buckets and sort within each bucket.
+SortIncludes: true
+SortUsingDeclarations: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  # Same-project headers come first.
+  - Regex: '^"phm/.*"'
+    Priority: 1
+  # Project-relative includes (anything in double quotes that isn't a
+  # `phm/...` path).
+  - Regex: '^".*"'
+    Priority: 2
+  # Arduino / ESP-IDF / NimBLE / RF24 / etc.
+  - Regex: '^(Arduino\.h|esp_.*|driver/.*|nrf24\.h|RF24\.h|NimBLE.*|Wire\.h|SPI\.h|Adafruit_.*|ESPAsyncWebServer.*|AsyncTCP.*|ArduinoJson\.h)'
+    Priority: 3
+  # C++ stdlib.
+  - Regex: '^<[a-z_]+>'
+    Priority: 4
+  # C stdlib (e.g. <stdint.h>, <string.h>).
+  - Regex: '^<[^>]+>\.h>'
+    Priority: 5
+  # Anything else.
+  - Regex: '^<.*'
+    Priority: 6
+
+# --- pointers & references --------------------------------------------------
+# `int* x` not `int *x`, `int& y` not `int &y`.
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+# --- spaces & alignment -----------------------------------------------------
+SpacesBeforeTrailingComments: 2
+SpaceAfterCStyleCast: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: false
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceInEmptyParentheses: false
+SpacesInAngles: false
+SpacesInContainerLiterals: true
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# --- line breaks & reflow ---------------------------------------------------
+AlwaysBreakAfterReturnType: None
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: MultiLine
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList: BeforeColon
+BreakStringLiterals: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+ReflowComments: true
+
+# --- misc -------------------------------------------------------------------
+AccessModifierOffset: -4
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+FixNamespaceComments: true
+KeepEmptyLinesAtEOF: false
+StatementAttributeLikeMacros:
+  - Q_UNUSED
+  - Q_DECLARE_PRIVATE
+  - PHM_DEPRECATED
+...

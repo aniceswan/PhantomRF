@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="PhantomRF — install the firmware from your browser">
+  <title>PhantomRF · Web Flasher</title>
+
+  <link rel="icon" type="image/svg+xml" href="../web/img/logo.svg">
+  <link rel="stylesheet" href="../web/css/style.css">
+  <style>
+    /* Flasher-specific tweaks — keeps the main style sheet untouched. */
+    .flasher {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: var(--sp-6) var(--sp-4);
+    }
+    .flasher__hero {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-4);
+      padding-bottom: var(--sp-4);
+      margin-bottom: var(--sp-5);
+      border-bottom: var(--border-w) solid var(--border-default);
+    }
+    .flasher__hero img { width: 48px; height: 48px; }
+    .flasher__hero h1 {
+      font-family: var(--font-mono);
+      font-size: var(--fs-xl);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin: 0;
+    }
+    .flasher__hero p {
+      color: var(--text-secondary);
+      font-size: var(--fs-sm);
+      margin: 0;
+    }
+    .flasher__step {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--sp-3);
+      padding: var(--sp-3) 0;
+      border-bottom: var(--border-w) solid var(--border-muted);
+    }
+    .flasher__step:last-child { border-bottom: 0; }
+    .flasher__step-n {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-weight: 700;
+      background: var(--accent-blue-dim); color: var(--text-primary);
+      border: var(--border-w) solid var(--accent-blue);
+    }
+    .flasher__step-body { flex: 1; min-width: 0; }
+    .flasher__step-title { font-weight: 600; margin-bottom: var(--sp-1); }
+    .flasher__step-text { color: var(--text-secondary); font-size: var(--fs-sm); }
+
+    esp-web-install-button button {
+      min-height: 52px !important;
+      font-size: var(--fs-md) !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.04em !important;
+      text-transform: uppercase !important;
+    }
+
+    .flasher__compatibility {
+      background: var(--bg-secondary);
+      border: var(--border-w) solid var(--border-default);
+      padding: var(--sp-3) var(--sp-4);
+      font-size: var(--fs-sm);
+      color: var(--text-secondary);
+      margin-bottom: var(--sp-4);
+    }
+    .flasher__compatibility kbd {
+      font-family: var(--font-mono);
+      background: var(--bg-tertiary);
+      border: var(--border-w) solid var(--border-default);
+      padding: 1px 6px;
+      color: var(--accent-cyan);
+      font-size: 0.9em;
+    }
+    .flasher__manifest {
+      font-family: var(--font-mono);
+      font-size: var(--fs-xs);
+      color: var(--text-tertiary);
+      word-break: break-all;
+    }
+    .flasher__browser-list {
+      list-style: none; padding: 0; margin: 0;
+      display: flex; flex-wrap: wrap; gap: var(--sp-2);
+    }
+    .flasher__browser-list li {
+      display: inline-flex; align-items: center; gap: var(--sp-1);
+      padding: var(--sp-1) var(--sp-2);
+      background: var(--bg-tertiary);
+      border: var(--border-w) solid var(--border-default);
+      font-family: var(--font-mono);
+      font-size: var(--fs-xs);
+    }
+    .flasher__browser-list li.ok   { color: var(--accent-green); border-color: var(--accent-green); }
+    .flasher__browser-list li.warn { color: var(--accent-yellow); border-color: var(--accent-yellow); }
+    .flasher__browser-list li.no   { color: var(--accent-red); border-color: var(--accent-red); }
+    @media (max-width: 480px) {
+      .flasher { padding: var(--sp-4) var(--sp-3); }
+      .flasher__hero h1 { font-size: var(--fs-md); }
+    }
+  </style>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "esp-web-tools": "https://unpkg.com/esp-web-tools@^9.0/dist/web/install-button.js"
+      }
+    }
+  </script>
+  <script type="module" src="https://unpkg.com/esp-web-tools@^9.0/dist/web/install-button.js"></script>
+</head>
+<body>
+
+<main class="main" id="main" style="grid-area: 1 / 1; overflow-y: auto;">
+  <div class="flasher">
+
+    <div class="flasher__hero">
+      <img src="../web/img/logo.svg" alt="">
+      <div>
+        <h1>PhantomRF &mdash; Web Flasher</h1>
+        <p>Install the firmware directly from your browser. No tool, no driver, no command line.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">Browser compatibility</h2>
+      </div>
+      <div class="card__body">
+        <p style="margin: 0 0 var(--sp-2);">WebSerial is required.</p>
+        <ul class="flasher__browser-list">
+          <li class="ok">Chrome / Edge 89+</li>
+          <li class="ok">Opera 75+</li>
+          <li class="warn">Firefox &mdash; enable <code>dom.webserial.enabled</code></li>
+          <li class="no">Safari &mdash; not supported</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">Select your board</h2>
+        <span class="card__subtitle">v1.0.0</span>
+      </div>
+      <div class="card__body">
+
+        <div class="form__group">
+          <label class="form__label" for="variant">
+            <span class="form__label-text">Board variant</span>
+          </label>
+          <select class="select" id="variant">
+            <option value="esp32s3-n16r8">ESP32-S3-WROOM-1-N16R8 &mdash; 16 MB flash, 8 MB PSRAM (recommended)</option>
+            <option value="esp32s3-n8r2">ESP32-S3-WROOM-1-N8R2 &mdash; 8 MB flash, 2 MB PSRAM</option>
+            <option value="esp32-classic">ESP32-WROOM-32D &mdash; classic ESP32 (reduced features)</option>
+            <option value="esp32c3">ESP32-C3-DevKitM-1 &mdash; RISC-V, single core (nRF24 only)</option>
+            <option value="esp32s2">ESP32-S2-Saola-1 &mdash; USB OTG native, no BLE</option>
+          </select>
+          <div class="form__hint">Pick the variant that matches the module soldered on your dev board.</div>
+        </div>
+
+        <div class="banner banner--info mt-3">
+          <svg class="banner__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div class="banner__body">
+            <div class="banner__title">Read this first</div>
+            <div class="banner__text">You will need a USB-C data cable (not charge-only). The first flash erases the existing flash. Re-flashing over OTA later preserves settings.</div>
+          </div>
+        </div>
+
+        <div class="mt-4" style="display: flex; justify-content: center;">
+          <esp-web-install-button id="install" manifest="manifest_esp32s3-n16r8.json">
+            <button class="btn btn--primary btn--lg" type="button" slot="activate">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 8 12 3 17 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <span>Install PhantomRF</span>
+            </button>
+            <span slot="unsupported" class="text-danger text-sm">
+              Your browser does not support WebSerial. Use Chrome or Edge, or flash via <code>esptool.py</code> / <code>pio run -t upload</code>.
+            </span>
+            <span slot="not-allowed" class="text-danger text-sm">
+              WebSerial permission was denied. Click the button again and allow access to the serial port.
+            </span>
+          </esp-web-install-button>
+        </div>
+        <p class="flasher__manifest mt-3" id="manifest-path">manifest: manifest_esp32s3-n16r8.json</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">How to connect</h2>
+      </div>
+      <div class="card__body">
+        <div class="flasher__step">
+          <span class="flasher__step-n">1</span>
+          <div class="flasher__step-body">
+            <div class="flasher__step-title">Hold BOOT, plug USB</div>
+            <div class="flasher__step-text">Some boards need the BOOT button held while connecting the USB cable to enter download mode. Check your board's pinout.</div>
+          </div>
+        </div>
+        <div class="flasher__step">
+          <span class="flasher__step-n">2</span>
+          <div class="flasher__step-body">
+            <div class="flasher__step-title">Click "Install PhantomRF"</div>
+            <div class="flasher__step-text">A browser dialog will appear. Select the USB serial device that looks like <code>USB JTAG/serial debug unit</code> or <code>CP210x / CH34x</code>.</div>
+          </div>
+        </div>
+        <div class="flasher__step">
+          <span class="flasher__step-n">3</span>
+          <div class="flasher__step-body">
+            <div class="flasher__step-title">Wait for the flash to complete</div>
+            <div class="flasher__step-text">Erase + write + verify takes 30&ndash;60 seconds. The device will reboot into PhantomRF and start broadcasting the <code>PhantomRF</code> WiFi network.</div>
+          </div>
+        </div>
+        <div class="flasher__step">
+          <span class="flasher__step-n">4</span>
+          <div class="flasher__step-body">
+            <div class="flasher__step-title">Connect and open the UI</div>
+            <div class="flasher__step-text">Join the <code>PhantomRF</code> WiFi network (password printed on the serial monitor the first time). Browse to <code>http://192.168.4.1</code>.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">Troubleshooting</h2>
+      </div>
+      <div class="card__body">
+
+        <h3 class="text-md fw-700 mt-0">"No serial port appeared"</h3>
+        <ul>
+          <li>Try a different USB cable &mdash; many are charge-only.</li>
+          <li>Check that the CH340 / CP2102 / USB-JTAG driver is installed for your board.</li>
+          <li>On Linux, add your user to the <code>dialout</code> group: <code>sudo usermod -aG dialout $USER</code>.</li>
+          <li>On macOS, allow the driver in System Settings &rarr; Privacy &amp; Security.</li>
+        </ul>
+
+        <h3 class="text-md fw-700">"Failed to connect: wrong boot mode"</h3>
+        <p>The ESP32-S3 is stuck in a non-download mode. Power-cycle, then hold BOOT while plugging the USB cable. Release BOOT once the device appears as a serial port.</p>
+
+        <h3 class="text-md fw-700">"Flash succeeded but the device doesn't boot"</h3>
+        <p>Hold BOOT, press and release RESET, then release BOOT. Re-run the flasher. If the issue persists, erase the flash first:</p>
+        <pre>esptool.py --chip esp32s3 --port /dev/ttyACM0 erase_flash</pre>
+
+        <h3 class="text-md fw-700">"I want to flash over OTA later"</h3>
+        <p>Once PhantomRF is running, use the firmware page inside the web UI (no cable needed). The device will reboot when the new firmware is verified.</p>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">Manual install</h2>
+      </div>
+      <div class="card__body">
+        <p>If the web flasher does not work, you can install the firmware using <code>esptool.py</code> or PlatformIO:</p>
+        <pre>pip install esptool
+esptool.py --chip esp32s3 --port /dev/ttyACM0 write_flash 0x0 PhantomRF-esp32s3-n16r8-v1.0.0.bin</pre>
+        <p>Or with PlatformIO:</p>
+        <pre>git clone https://github.com/.../PhantomRF
+cd PhantomRF
+pio run -e esp32s3-n16r8 -t upload</pre>
+        <p>For ESP32-S3 native drag-and-drop UF2, hold BOOT, press RESET, release RESET, release BOOT. The board will appear as a USB drive. Drag <code>firmware.uf2</code> onto it.</p>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  // Swap manifest when the user picks a different board variant.
+  const select = document.getElementById('variant');
+  const btn    = document.getElementById('install');
+  const mp     = document.getElementById('manifest-path');
+  function updateManifest() {
+    const v = select.value;
+    btn.setAttribute('manifest', `manifest_${v}.json`);
+    mp.textContent = `manifest: manifest_${v}.json`;
+  }
+  select.addEventListener('change', updateManifest);
+  updateManifest();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Name,     Type, SubType, Offset,  Size,    Flags
+# ----------------------------------------------------------------------------
+# PhantomRF — minimal 4 MB flash partition table (ESP32-C3 / ESP32-S2)
+# ----------------------------------------------------------------------------
+# Total flash: 4 MB (0x400000)
+#
+# Layout:
+#   0x000000 - 0x008FFF : Bootloader (reserved, ~36 KB)
+#   0x009000 - 0x00EFFF : NVS (24 KB)
+#   0x00F000 - 0x00FFFF : PHY init (4 KB)
+#   0x010000 - 0x18FFFF : Factory app (1.5 MB)
+#   0x190000 - 0x30FFFF : OTA_0 app (1.5 MB)
+#   0x310000 - 0x38FFFF : LittleFS (0.5 MB) — compressed web UI only
+#
+# 0.5 MB of LittleFS is tight: just enough for a slimmed-down web UI, no
+# recordings or large SSID lists. Use the SD card version of the firmware
+# for storage-heavy features. Note ~448 KB at the top of flash is unused
+# to keep the partition boundaries aligned to common SPI flash sector sizes.
+# ----------------------------------------------------------------------------
+nvs,                data, nvs,     0x9000,   0x6000
+phy_init,           data, phy,     0xf000,   0x1000
+factory,            app,  factory, 0x10000,  0x180000
+ota_0,              app,  ota_0,   0x190000, 0x180000
+storage,            data, spiffs,  0x310000, 0x80000

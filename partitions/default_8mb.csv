@@ -1,0 +1,22 @@
+# Name,     Type, SubType, Offset,  Size,    Flags
+# ----------------------------------------------------------------------------
+# PhantomRF — 8 MB flash partition table (ESP32-S3-N8R2 / classic ESP32)
+# ----------------------------------------------------------------------------
+# Total flash: 8 MB (0x800000)
+#
+# Layout:
+#   0x000000 - 0x008FFF : Bootloader (reserved, ~36 KB)
+#   0x009000 - 0x00EFFF : NVS (24 KB)
+#   0x00F000 - 0x00FFFF : PHY init (4 KB)
+#   0x010000 - 0x20FFFF : Factory app (2 MB)
+#   0x210000 - 0x40FFFF : OTA_0 app (2 MB)
+#   0x410000 - 0x78FFFF : LittleFS (3.5 MB) — web UI + recordings
+#
+# Note: ~448 KB at the top of flash (0x790000-0x7FFFFF) is left unused.
+# Keeping a clean power-of-two boundary makes the table easy to reason about.
+# ----------------------------------------------------------------------------
+nvs,                data, nvs,     0x9000,   0x6000
+phy_init,           data, phy,     0xf000,   0x1000
+factory,            app,  factory, 0x10000,  0x200000
+ota_0,              app,  ota_0,   0x210000, 0x200000
+storage,            data, spiffs,  0x410000, 0x380000

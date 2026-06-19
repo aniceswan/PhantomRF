@@ -1,0 +1,102 @@
+# -----------------------------------------------------------------------------
+#  PhantomRF — cross-platform line-ending rules
+# -----------------------------------------------------------------------------
+#  All text is normalized to LF on commit. The explicit overrides below keep
+#  Windows-style line endings for files that absolutely need CRLF (we have
+#  none today, so no `eol=crlf` rules are set).
+# -----------------------------------------------------------------------------
+
+# Default: detect text/binary automatically, normalize to LF on commit.
+*               text=auto eol=lf
+
+# C / C++ source
+*.cpp           text eol=lf
+*.cc            text eol=lf
+*.cxx           text eol=lf
+*.c             text eol=lf
+*.h             text eol=lf
+*.hpp           text eol=lf
+*.hh            text eol=lf
+*.hxx           text eol=lf
+*.ino           text eol=lf
+*.inc           text eol=lf
+*.S             text eol=lf
+
+# Build system
+Makefile        text eol=lf
+*.mk            text eol=lf
+*.cmake         text eol=lf
+CMakeLists.txt  text eol=lf
+
+# Scripts
+*.py            text eol=lf
+*.sh            text eol=lf
+*.bash          text eol=lf
+*.zsh           text eol=lf
+*.bat           text eol=crlf
+*.cmd           text eol=crlf
+*.ps1           text eol=crlf
+
+# Config / data
+*.ini           text eol=lf
+*.cfg           text eol=lf
+*.conf          text eol=lf
+*.toml          text eol=lf
+*.csv           text eol=lf
+*.json          text eol=lf
+*.jsonc         text eol=lf
+*.yaml          text eol=lf
+*.yml           text eol=lf
+*.xml           text eol=lf
+*.txt           text eol=lf
+
+# Docs
+*.md            text eol=lf
+*.markdown      text eol=lf
+*.rst           text eol=lf
+*.adoc          text eol=lf
+*.tex           text eol=lf
+
+# Web
+*.html          text eol=lf
+*.htm           text eol=lf
+*.css           text eol=lf
+*.scss          text eol=lf
+*.sass          text eol=lf
+*.less          text eol=lf
+*.js            text eol=lf
+*.mjs           text eol=lf
+*.cjs           text eol=lf
+*.jsx           text eol=lf
+*.ts            text eol=lf
+*.tsx           text eol=lf
+*.vue           text eol=lf
+*.svelte        text eol=lf
+
+# Partition tables and PlatformIO config
+partitions/*.csv   text eol=lf
+platformio.ini     text eol=lf
+
+# Known binary blobs
+*.png            binary
+*.jpg            binary
+*.jpeg           binary
+*.gif            binary
+*.webp           binary
+*.ico            binary
+*.icns           binary
+*.pdf            binary
+*.zip            binary
+*.gz             binary
+*.bz2            binary
+*.xz             binary
+*.7z             binary
+*.rar            binary
+*.ttf            binary
+*.otf            binary
+*.woff           binary
+*.woff2          binary
+*.eot            binary
+*.bin            binary
+*.elf            binary
+*.uf2            binary

@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="PhantomRF — ESP32-S3 RF research platform control interface">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PhantomRF">
+
+  <title>PhantomRF</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="img/logo.svg">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- ============================================================== -->
+    <!--  Top bar                                                        -->
+    <!-- ============================================================== -->
+    <header class="topbar" role="banner">
+      <button class="topbar__sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+          <line x1="3" y1="6"  x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+
+      <div class="topbar__brand">
+        <object class="topbar__logo" data="img/logo.svg" type="image/svg+xml" aria-hidden="true">
+          <svg class="topbar__logo" viewBox="0 0 64 64" aria-hidden="true">
+            <rect x="2" y="2" width="60" height="60" fill="#0d1117" stroke="#30363d" stroke-width="2"/>
+            <circle cx="32" cy="32" r="3" fill="#58a6ff"/>
+            <path d="M22 32 A10 10 0 0 1 42 32" fill="none" stroke="#58a6ff" stroke-width="2"/>
+            <path d="M16 32 A16 16 0 0 1 48 32" fill="none" stroke="#58a6ff" stroke-width="2"/>
+            <path d="M10 32 A22 22 0 0 1 54 32" fill="none" stroke="#58a6ff" stroke-width="2"/>
+          </svg>
+        </object>
+        <h1 class="topbar__title">
+          Phantom<span class="topbar__title-mark">RF</span>
+        </h1>
+      </div>
+
+      <div class="topbar__spacer"></div>
+
+      <div class="topbar__status" id="topbar-status">
+        <span class="topbar__item topbar__item--wide" title="Control channel health">
+          <span class="dot dot--ready" id="status-channel"></span>
+          <span class="text-tertiary">CH</span>
+          <span class="topbar__item-value" id="status-channel-name">--</span>
+        </span>
+        <span class="topbar__item" title="WiFi connection">
+          <svg class="signal signal--mid" id="wifi-signal" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <rect class="signal__bar" x="1"  y="11" width="3" height="3"/>
+            <rect class="signal__bar" x="5"  y="8"  width="3" height="6"/>
+            <rect class="signal__bar" x="9"  y="5"  width="3" height="9"/>
+            <rect class="signal__bar" x="13" y="2"  width="3" height="12"/>
+          </svg>
+          <span class="topbar__item-value" id="status-wifi-clients">0</span>
+        </span>
+        <span class="topbar__item" title="Battery voltage">
+          <span class="battery battery--high" id="battery-wrap">
+            <span class="battery__icon"><span class="battery__fill" id="battery-fill" style="--bat: 100%"></span></span>
+            <span class="topbar__item-value" id="status-vbat">--</span>
+            <span class="text-tertiary">V</span>
+          </span>
+        </span>
+        <span class="topbar__item" title="Internal temperature">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+            <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+          </svg>
+          <span class="topbar__item-value" id="status-temp">--</span>
+          <span class="text-tertiary">°C</span>
+        </span>
+        <span class="topbar__item" title="Free heap">
+          <span class="text-tertiary">HEAP</span>
+          <span class="topbar__item-value" id="status-heap">--</span>
+        </span>
+        <span class="topbar__item" title="Uptime">
+          <span class="text-tertiary">UP</span>
+          <span class="topbar__item-value" id="status-uptime">--</span>
+        </span>
+      </div>
+    </header>
+
+    <!-- ============================================================== -->
+    <!--  Sidebar                                                        -->
+    <!-- ============================================================== -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+    <nav class="sidebar" id="sidebar" aria-label="Primary navigation">
+      <ul class="sidebar__nav" role="list">
+        <li>
+          <button class="sidebar__item sidebar__item--active" data-page="dashboard" type="button">
+            <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="9"/>
+              <rect x="14" y="3" width="7" height="5"/>
+              <rect x="14" y="12" width="7" height="9"/>
+              <rect x="3" y="16" width="7" height="5"/>
+            </svg>
+            <span class="sidebar__label">Dashboard</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__item" data-page="bluetooth" type="button">
+            <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 8l10 8-5 5V3l5 5-10 8"/>
+            </svg>
+            <span class="sidebar__label">Bluetooth</span>
+            <span class="sidebar__badge sidebar__badge--idle" data-badge="bluetooth">--</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__item" data-page="wifi" type="button">
+            <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 12.55a11 11 0 0 1 14 0"/>
+              <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+              <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+              <line x1="12" y1="20" x2="12" y2="20"/>
+            </svg>
+            <span class="sidebar__label">WiFi</span>
+            <span class="sidebar__badge sidebar__badge--idle" data-badge="wifi">--</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__item" data-page="2.4ghz" type="button">
+            <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="2"/>
+              <path d="M8 12a4 4 0 0 1 8 0"/>
+              <path d="M4 12a8 8 0 0 1 16 0"/>
+            </svg>
+            <span class="sidebar__label">2.4 GHz</span>
+            <span class="sidebar__badge sidebar__badge--idle" data-badge="2.4ghz">--</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__item" data-page="subghz" type="button">
+            <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 18l8-13 8 13"/>
+              <line x1="7" y1="18" x2="17" y2="18"/>
+              <line x1="9.5" y1="22" x2="14.5" y2="22"/>
+            </svg>
+            <span class="sidebar__label">Sub-GHz</span>
+            <span class="sidebar__badge sidebar__badge--idle" data-badge="subghz">--</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__item" data-page="spectrum" type="button">
+            <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <line x1="2"  y1="20" x2="2"  y2="20"/>
+              <line x1="6"  y1="20" x2="6"  y2="12"/>
+              <line x1="10" y1="20" x2="10" y2="6"/>
+              <line x1="14" y1="20" x2="14" y2="14"/>
+              <line x1="18" y1="20" x2="18" y2="9"/>
+              <line x1="22" y1="20" x2="22" y2="16"/>
+            </svg>
+            <span class="sidebar__label">Spectrum</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__item" data-page="files" type="button">
+            <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span class="sidebar__label">Files</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__item" data-page="terminal" type="button">
+            <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <polyline points="4 17 10 11 4 5"/>
+              <line x1="12" y1="19" x2="20" y2="19"/>
+            </svg>
+            <span class="sidebar__label">Terminal</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__item" data-page="ota" type="button">
+            <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span class="sidebar__label">Firmware</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__item" data-page="settings" type="button">
+            <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span class="sidebar__label">Settings</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__item" data-page="help" type="button">
+            <svg class="sidebar__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span class="sidebar__label">Help</span>
+          </button>
+        </li>
+      </ul>
+      <div class="sidebar__footer">
+        <div>PhantomRF v<span id="fw-version">--</span></div>
+        <div class="text-tertiary" id="fw-build">build --</div>
+      </div>
+    </nav>
+
+    <!-- ============================================================== -->
+    <!--  Main                                                           -->
+    <!-- ============================================================== -->
+    <main class="main" id="main" role="main">
+
+      <!-- DASHBOARD ----------------------------------------------- -->
+      <section class="page page--active" id="page-dashboard" aria-labelledby="page-dashboard-title">
+        <header class="page__header">
+          <div>
+            <h2 class="page__title" id="page-dashboard-title">
+              <span class="page__title-prefix">&gt;</span> Dashboard
+            </h2>
+            <p class="page__subtitle">System overview, current activity, quick actions.</p>
+          </div>
+          <div class="page__actions">
+            <button class="btn btn--ghost btn--sm" id="dash-refresh" type="button">Refresh</button>
+            <button class="btn btn--danger btn--sm" id="dash-emergency-stop" type="button">Emergency Stop</button>
+          </div>
+        </header>
+
+        <div id="dashboard-banner"></div>
+
+        <div class="grid grid--stat">
+          <div class="stat">
+            <div class="stat__label">State</div>
+            <div class="stat__value" id="dash-state">--</div>
+            <div class="stat__sub" id="dash-state-sub">No active module</div>
+          </div>
+          <div class="stat">
+            <div class="stat__label">Current Module</div>
+            <div class="stat__value" id="dash-module">--</div>
+            <div class="stat__sub" id="dash-module-method">--</div>
+          </div>
+          <div class="stat">
+            <div class="stat__label">Uptime</div>
+            <div class="stat__value" id="dash-uptime">--</div>
+            <div class="stat__sub" id="dash-uptime-sub">--</div>
+          </div>
+          <div class="stat">
+            <div class="stat__label">Free Heap</div>
+            <div class="stat__value" id="dash-heap">--</div>
+            <div class="stat__sub" id="dash-heap-sub">of total</div>
+          </div>
+          <div class="stat">
+            <div class="stat__label">Temperature</div>
+            <div class="stat__value" id="dash-temp">--<span class="stat__unit">°C</span></div>
+            <div class="stat__sub" id="dash-temp-sub">internal sensor</div>
+          </div>
+          <div class="stat">
+            <div class="stat__label">Battery</div>
+            <div class="stat__value" id="dash-vbat">--<span class="stat__unit">V</span></div>
+            <div class="stat__sub" id="dash-vbat-sub">--</div>
+          </div>
+        </div>
+
+        <div class="grid grid--2" style="margin-top: var(--sp-4);">
+          <div class="card">
+            <div class="card__header">
+              <h3 class="card__title">Quick Attack</h3>
+              <span class="card__subtitle">Single click</span>
+            </div>
+            <div class="card__body">
+              <div class="grid grid--2">
+                <button class="btn btn--danger" data-quick-attack="bluetooth" type="button">BT Jam</button>
+                <button class="btn btn--danger" data-quick-attack="ble" type="button">BLE Jam</button>
+                <button class="btn btn--danger" data-quick-attack="wifi" type="button">WiFi Deauth</button>
+                <button class="btn btn--danger" data-quick-attack="2.4ghz" type="button">2.4G Jam</button>
+                <button class="btn btn--danger" data-quick-attack="subghz" type="button">Sub-GHz Jam</button>
+                <button class="btn btn--ghost" data-quick-attack="spectrum" type="button">Spectrum Scan</button>
+              </div>
+            </div>
+            <div class="card__footer">
+              <span class="text-xs text-tertiary">2.4 GHz attacks will disconnect this UI</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__header">
+              <h3 class="card__title">Recent Activity</h3>
+              <span class="card__subtitle">Last 20 events</span>
+            </div>
+            <div class="card__body card__body--flush">
+              <table class="table table--compact">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Module</th>
+                    <th>Action</th>
+                    <th>Result</th>
+                  </tr>
+                </thead>
+                <tbody id="dash-log">
+                  <tr><td colspan="4" class="text-tertiary text-center text-xs">No activity yet</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BLUETOOTH ----------------------------------------------- -->
+      <section class="page" id="page-bluetooth" aria-labelledby="page-bluetooth-title">
+        <header class="page__header">
+          <div>
+            <h2 class="page__title" id="page-bluetooth-title">
+              <span class="page__title-prefix">&gt;</span> Bluetooth
+            </h2>
+            <p class="page__subtitle">BT Classic + BLE jamming. Uses nRF24 (BLE ad channels) + ESP32 BT stack.</p>
+          </div>
+          <div class="page__actions">
+            <span class="dot dot--idle" id="bt-dot"></span>
+            <span class="text-sm text-mono text-secondary" id="bt-status">idle</span>
+          </div>
+        </header>
+        <div id="attacks-bluetooth" class="attacks"></div>
+      </section>
+
+      <!-- WIFI --------------------------------------------------- -->
+      <section class="page" id="page-wifi" aria-labelledby="page-wifi-title">
+        <header class="page__header">
+          <div>
+            <h2 class="page__title" id="page-wifi-title">
+              <span class="page__title-prefix">&gt;</span> WiFi
+            </h2>
+            <p class="page__subtitle">Deauth, disassoc, beacon flood, probe flood, PMKID.</p>
+          </div>
+          <div class="page__actions">
+            <span class="dot dot--idle" id="wifi-dot"></span>
+            <span class="text-sm text-mono text-secondary" id="wifi-status">idle</span>
+          </div>
+        </header>
+        <div id="attacks-wifi" class="attacks"></div>
+      </section>
+
+      <!-- 2.4 GHZ ------------------------------------------------ -->
+      <section class="page" id="page-2.4ghz" aria-labelledby="page-2.4ghz-title">
+        <header class="page__header">
+          <div>
+            <h2 class="page__title" id="page-2.4ghz-title">
+              <span class="page__title-prefix">&gt;</span> 2.4 GHz
+            </h2>
+            <p class="page__subtitle">nRF24 sweeps — Bluetooth, BLE, drone, WiFi brute, Zigbee, custom.</p>
+          </div>
+          <div class="page__actions">
+            <span class="dot dot--idle" id="nrf24-dot"></span>
+            <span class="text-sm text-mono text-secondary" id="nrf24-status">idle</span>
+          </div>
+        </header>
+        <div class="banner banner--danger">
+          <svg class="banner__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <div class="banner__body">
+            <div class="banner__title">Self-jamming warning</div>
+            <div class="banner__text">2.4 GHz attacks will disconnect this web UI. Use USB serial (115200) or the OLED menu to stop.</div>
+          </div>
+        </div>
+        <div id="attacks-2.4ghz" class="attacks"></div>
+      </section>
+
+      <!-- SUB-GHZ ------------------------------------------------ -->
+      <section class="page" id="page-subghz" aria-labelledby="page-subghz-title">
+        <header class="page__header">
+          <div>
+            <h2 class="page__title" id="page-subghz-title">
+              <span class="page__title-prefix">&gt;</span> Sub-GHz
+            </h2>
+            <p class="page__subtitle">CC1101 spot / range / hopper / keyfob. Record and replay RAW OOK/FSK.</p>
+          </div>
+          <div class="page__actions">
+            <span class="dot dot--idle" id="cc1101-dot"></span>
+            <span class="text-sm text-mono text-secondary" id="cc1101-status">idle</span>
+          </div>
+        </header>
+        <div id="attacks-subghz" class="attacks"></div>
+      </section>
+
+      <!-- SPECTRUM ----------------------------------------------- -->
+      <section class="page" id="page-spectrum" aria-labelledby="page-spectrum-title">
+        <header class="page__header">
+          <div>
+            <h2 class="page__title" id="page-spectrum-title">
+              <span class="page__title-prefix">&gt;</span> Spectrum
+            </h2>
+            <p class="page__subtitle">Live RSSI bar chart + scrolling waterfall. 126 channels × 1 MHz.</p>
+          </div>
+          <div class="page__actions">
+            <div class="btn-group" role="group" aria-label="Spectrum band">
+              <button class="btn btn--sm" data-band="2.4ghz" type="button">2.4 GHz</button>
+              <button class="btn btn--sm" data-band="subghz" type="button">Sub-GHz</button>
+            </div>
+            <button class="btn btn--ghost btn--sm" id="spectrum-pause" type="button">Pause</button>
+            <button class="btn btn--ghost btn--sm" id="spectrum-clear" type="button">Clear</button>
+          </div>
+        </header>
+
+        <div class="card">
+          <div class="card__header">
+            <h3 class="card__title">RSSI bar chart</h3>
+            <span class="card__subtitle"><span id="spectrum-fps">0</span> fps</span>
+          </div>
+          <div class="card__body card__body--flush">
+            <div class="spectrum__chart-wrap" id="spectrum-chart-wrap">
+              <canvas id="spectrum-canvas"></canvas>
+              <div class="spectrum__hover" id="spectrum-hover"></div>
+            </div>
+          </div>
+          <div class="card__footer">
+            <div class="spectrum__legend">
+              <span class="spectrum__legend-item"><span class="spectrum__legend-swatch" style="background:#f85149"></span>−100 dBm</span>
+              <span class="spectrum__legend-item"><span class="spectrum__legend-swatch" style="background:#d29922"></span>−80 dBm</span>
+              <span class="spectrum__legend-item"><span class="spectrum__legend-swatch" style="background:#3fb950"></span>−60 dBm</span>
+              <span class="spectrum__legend-item"><span class="spectrum__legend-swatch" style="background:#58a6ff"></span>−40 dBm</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__header">
+            <h3 class="card__title">Waterfall</h3>
+            <span class="card__subtitle" id="spectrum-frames">0 frames</span>
+          </div>
+          <div class="card__body card__body--flush">
+            <div class="spectrum__waterfall-wrap">
+              <canvas id="waterfall-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FILES -------------------------------------------------- -->
+      <section class="page" id="page-files" aria-labelledby="page-files-title">
+        <header class="page__header">
+          <div>
+            <h2 class="page__title" id="page-files-title">
+              <span class="page__title-prefix">&gt;</span> Files
+            </h2>
+            <p class="page__subtitle">Recordings (.sub) and configuration files on LittleFS.</p>
+          </div>
+          <div class="page__actions">
+            <button class="btn btn--ghost btn--sm" id="files-refresh" type="button">Refresh</button>
+          </div>
+        </header>
+
+        <div class="files__toolbar">
+          <div class="btn-group" role="group" aria-label="File path">
+            <button class="btn btn--sm" data-path="/recordings" type="button">/recordings</button>
+            <button class="btn btn--sm" data-path="/config" type="button">/config</button>
+            <button class="btn btn--sm" data-path="/" type="button">/</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__header">
+            <h3 class="card__title" id="files-path-title">/recordings</h3>
+            <span class="card__subtitle" id="files-count">0 files</span>
+          </div>
+          <div class="card__body card__body--flush">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Size</th>
+                  <th>Modified</th>
+                  <th class="actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="files-list">
+                <tr><td colspan="4" class="text-tertiary text-center text-xs">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__header">
+            <h3 class="card__title">Upload</h3>
+            <span class="card__subtitle">.sub recordings or .json configs</span>
+          </div>
+          <div class="card__body">
+            <label class="files__upload" id="files-drop">
+              <input type="file" id="files-input" accept=".sub,.json,.txt,.bin">
+              <div><strong>Click to choose a file</strong> or drag &amp; drop here</div>
+              <div class="text-xs text-tertiary mt-2" id="files-upload-status">No file selected</div>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- TERMINAL ----------------------------------------------- -->
+      <section class="page" id="page-terminal" aria-labelledby="page-terminal-title">
+        <header class="page__header">
+          <div>
+            <h2 class="page__title" id="page-terminal-title">
+              <span class="page__title-prefix">&gt;</span> Terminal
+            </h2>
+            <p class="page__subtitle">WebSerial CLI — same commands as USB serial. Tab to complete, ↑/↓ for history.</p>
+          </div>
+          <div class="page__actions">
+            <button class="btn btn--ghost btn--sm" id="terminal-clear" type="button">Clear</button>
+            <button class="btn btn--ghost btn--sm" id="terminal-reconnect" type="button">Reconnect</button>
+          </div>
+        </header>
+        <div class="terminal" id="terminal">
+          <div class="terminal__output" id="terminal-output" tabindex="0" role="log" aria-live="polite"></div>
+          <div class="terminal__input-row">
+            <span class="terminal__prompt" id="terminal-prompt">phm&gt;</span>
+            <input type="text" class="terminal__input" id="terminal-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="CLI input">
+          </div>
+        </div>
+      </section>
+
+      <!-- OTA / FIRMWARE ----------------------------------------- -->
+      <section class="page" id="page-ota" aria-labelledby="page-ota-title">
+        <header class="page__header">
+          <div>
+            <h2 class="page__title" id="page-ota-title">
+              <span class="page__title-prefix">&gt;</span> Firmware
+            </h2>
+            <p class="page__subtitle">Over-the-air firmware update. The device will reboot when complete.</p>
+          </div>
+        </header>
+        <div class="card">
+          <div class="card__header">
+            <h3 class="card__title">Upload .bin</h3>
+            <span class="card__subtitle">ESP32 OTA partition</span>
+          </div>
+          <div class="card__body">
+            <label class="files__upload" id="ota-drop">
+              <input type="file" id="ota-input" accept=".bin">
+              <div><strong>Click to choose firmware.bin</strong> or drag &amp; drop</div>
+              <div class="text-xs text-tertiary mt-2" id="ota-status">No file selected</div>
+            </label>
+            <div class="progress mt-3 hidden" id="ota-progress-wrap">
+              <div class="progress__bar" id="ota-progress-bar"></div>
+            </div>
+          </div>
+          <div class="card__footer">
+            <button class="btn btn--danger" id="ota-upload" type="button" disabled>Upload &amp; Flash</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS ----------------------------------------------- -->
+      <section class="page" id="page-settings" aria-labelledby="page-settings-title">
+        <header class="page__header">
+          <div>
+            <h2 class="page__title" id="page-settings-title">
+              <span class="page__title-prefix">&gt;</span> Settings
+            </h2>
+            <p class="page__subtitle">Persistent configuration. Changes take effect immediately.</p>
+          </div>
+          <div class="page__actions">
+            <button class="btn btn--ghost btn--sm" id="settings-reset" type="button">Reset to defaults</button>
+          </div>
+        </header>
+        <form class="form" id="settings-form" autocomplete="off">
+          <div class="card">
+            <div class="card__header">
+              <h3 class="card__title">WiFi (AP mode)</h3>
+            </div>
+            <div class="card__body">
+              <div class="form__row">
+                <div class="form__group">
+                  <label class="form__label" for="cfg-ap-ssid"><span class="form__label-text">AP SSID</span></label>
+                  <input class="input" type="text" id="cfg-ap-ssid" maxlength="32" required>
+                  <div class="form__hint">Network name broadcast by the device.</div>
+                </div>
+                <div class="form__group">
+                  <label class="form__label" for="cfg-ap-password"><span class="form__label-text">AP Password</span></label>
+                  <input class="input" type="password" id="cfg-ap-password" minlength="8" maxlength="63">
+                  <div class="form__hint">8–63 chars. Leave blank to keep current.</div>
+                </div>
+              </div>
+              <div class="form__row">
+                <div class="form__group">
+                  <label class="form__label" for="cfg-ap-channel"><span class="form__label-text">AP Channel</span></label>
+                  <select class="select" id="cfg-ap-channel">
+                    <option value="1">1</option><option value="6">6</option><option value="11">11</option>
+                  </select>
+                </div>
+                <div class="form__group">
+                  <label class="form__label" for="cfg-ap-hidden">
+                    <span class="form__label-text">Hidden SSID</span>
+                  </label>
+                  <label class="checkbox"><input type="checkbox" id="cfg-ap-hidden"> Don't broadcast</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__header">
+              <h3 class="card__title">nRF24 (2.4 GHz)</h3>
+            </div>
+            <div class="card__body">
+              <div class="form__row">
+                <div class="form__group">
+                  <label class="form__label" for="cfg-nrf24-count"><span class="form__label-text">Modules</span></label>
+                  <select class="select" id="cfg-nrf24-count">
+                    <option value="1">1</option><option value="2">2</option>
+                    <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                  </select>
+                </div>
+                <div class="form__group">
+                  <label class="form__label" for="cfg-nrf24-pa"><span class="form__label-text">PA Level</span></label>
+                  <select class="select" id="cfg-nrf24-pa">
+                    <option value="MIN">MIN (-18 dBm)</option>
+                    <option value="LOW">LOW (-12 dBm)</option>
+                    <option value="HIGH">HIGH (-6 dBm)</option>
+                    <option value="MAX">MAX (0 dBm + ext PA)</option>
+                  </select>
+                </div>
+                <div class="form__group">
+                  <label class="form__label" for="cfg-nrf24-rate"><span class="form__label-text">Data Rate</span></label>
+                  <select class="select" id="cfg-nrf24-rate">
+                    <option value="1MBPS">1 Mbps</option>
+                    <option value="2MBPS">2 Mbps</option>
+                    <option value="250KBPS">250 kbps</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__header">
+              <h3 class="card__title">CC1101 (Sub-GHz)</h3>
+            </div>
+            <div class="card__body">
+              <div class="form__row">
+                <div class="form__group">
+                  <label class="form__label" for="cfg-cc1101-count"><span class="form__label-text">Modules</span></label>
+                  <select class="select" id="cfg-cc1101-count">
+                    <option value="0">Disabled</option>
+                    <option value="1">1</option><option value="2">2</option>
+                  </select>
+                </div>
+                <div class="form__group">
+                  <label class="form__label" for="cfg-cc1101-freq"><span class="form__label-text">Default Freq (MHz)</span></label>
+                  <input class="input" type="number" id="cfg-cc1101-freq" min="300" max="928" step="0.01">
+                </div>
+                <div class="form__group">
+                  <label class="form__label" for="cfg-cc1101-power"><span class="form__label-text">TX Power (dBm)</span></label>
+                  <input class="input" type="number" id="cfg-cc1101-power" min="-30" max="12">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__header">
+              <h3 class="card__title">Sweep</h3>
+            </div>
+            <div class="card__body">
+              <div class="form__row">
+                <div class="form__group">
+                  <label class="form__label" for="cfg-sweep-method"><span class="form__label-text">Method</span></label>
+                  <select class="select" id="cfg-sweep-method">
+                    <option value="list">List (sequential)</option>
+                    <option value="random">Random</option>
+                    <option value="brute">Brute (round-robin)</option>
+                  </select>
+                </div>
+                <div class="form__group">
+                  <label class="form__label" for="cfg-sweep-direction"><span class="form__label-text">Direction</span></label>
+                  <select class="select" id="cfg-sweep-direction">
+                    <option value="together">Together (all on same ch)</option>
+                    <option value="separate">Separate (round-robin)</option>
+                  </select>
+                </div>
+                <div class="form__group">
+                  <label class="form__label" for="cfg-sweep-delay"><span class="form__label-text">Channel dwell (ms)</span></label>
+                  <input class="input" type="number" id="cfg-sweep-delay" min="0" max="1000">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__header">
+              <h3 class="card__title">Buttons (OLED menu)</h3>
+            </div>
+            <div class="card__body">
+              <div class="form__row">
+                <div class="form__group">
+                  <label class="form__label" for="cfg-btn-mode"><span class="form__label-text">Mode</span></label>
+                  <select class="select" id="cfg-btn-mode">
+                    <option value="1">1-button</option>
+                    <option value="2">2-button</option>
+                    <option value="3">3-button</option>
+                  </select>
+                </div>
+                <div class="form__group">
+                  <label class="form__label" for="cfg-btn-long"><span class="form__label-text">Long press (ms)</span></label>
+                  <input class="input" type="number" id="cfg-btn-long" min="200" max="3000">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__header">
+              <h3 class="card__title">Display</h3>
+            </div>
+            <div class="card__body">
+              <div class="form__row">
+                <div class="form__group">
+                  <label class="form__label" for="cfg-display-flip"><span class="form__label-text">Flip OLED</span></label>
+                  <label class="checkbox"><input type="checkbox" id="cfg-display-flip"> Rotate 180°</label>
+                </div>
+                <div class="form__group">
+                  <label class="form__label" for="cfg-display-contrast"><span class="form__label-text">Contrast</span></label>
+                  <div class="range">
+                    <input type="range" id="cfg-display-contrast" min="0" max="255">
+                    <span class="range__value" id="cfg-display-contrast-value">128</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__header">
+              <h3 class="card__title">Change admin password</h3>
+            </div>
+            <div class="card__body">
+              <div class="form__row">
+                <div class="form__group">
+                  <label class="form__label" for="cfg-pw-current"><span class="form__label-text">Current</span></label>
+                  <input class="input" type="password" id="cfg-pw-current" autocomplete="current-password">
+                </div>
+                <div class="form__group">
+                  <label class="form__label" for="cfg-pw-new"><span class="form__label-text">New</span></label>
+                  <input class="input" type="password" id="cfg-pw-new" minlength="8" autocomplete="new-password">
+                </div>
+                <div class="form__group">
+                  <label class="form__label" for="cfg-pw-confirm"><span class="form__label-text">Confirm</span></label>
+                  <input class="input" type="password" id="cfg-pw-confirm" minlength="8" autocomplete="new-password">
+                </div>
+              </div>
+              <div class="form__hint">Leave all three blank to keep the current password.</div>
+            </div>
+          </div>
+
+          <div class="card__footer" style="margin-top: var(--sp-4); background: var(--bg-secondary); border: var(--border-w) solid var(--border-default);">
+            <button class="btn btn--ghost" type="reset">Discard</button>
+            <button class="btn btn--primary" type="submit" id="settings-save">Save settings</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- HELP --------------------------------------------------- -->
+      <section class="page" id="page-help" aria-labelledby="page-help-title">
+        <header class="page__header">
+          <div>
+            <h2 class="page__title" id="page-help-title">
+              <span class="page__title-prefix">&gt;</span> Help
+            </h2>
+            <p class="page__subtitle">Quick reference. Full documentation lives at <code>docs/</code>.</p>
+          </div>
+        </header>
+
+        <div class="card help__section">
+          <h2>Overview</h2>
+          <p>PhantomRF is a research platform for the 2.4 GHz and sub-GHz ISM bands. The web UI is one of <strong>five</strong> independent control channels (USB CDC, WebSocket WiFi, BLE Serial, OLED + buttons, and station-mode WiFi). When a 2.4 GHz attack is active, the WebSocket will degrade — use the OLED menu or USB serial to stop the attack.</p>
+        </div>
+
+        <div class="card help__section">
+          <h2>Keyboard shortcuts</h2>
+          <ul>
+            <li><span class="help__kbd">g</span> then <span class="help__kbd">d</span> — go to Dashboard</li>
+            <li><span class="help__kbd">g</span> then <span class="help__kbd">s</span> — go to Spectrum</li>
+            <li><span class="help__kbd">g</span> then <span class="help__kbd">t</span> — go to Terminal</li>
+            <li><span class="help__kbd">Esc</span> — close any open modal</li>
+            <li><span class="help__kbd">Tab</span> — terminal command completion</li>
+            <li><span class="help__kbd">↑</span> / <span class="help__kbd">↓</span> — terminal history</li>
+          </ul>
+        </div>
+
+        <div class="card help__section">
+          <h2>Attack categories</h2>
+          <h3>Bluetooth</h3>
+          <p>AFH sweep + brute force on the 79 BT Classic channels; NOACK injection on BLE ad channels 37/38/39; CW jamming on BLE data channels.</p>
+          <h3>WiFi</h3>
+          <p>Deauthentication and disassociation frames on all 14 channels. Beacon flood with user-supplied SSID list. Probe request flood. PMKID capture (M1).</p>
+          <h3>2.4 GHz</h3>
+          <p>nRF24L01+PA+LNA constant carrier sweep. Configurable channel range, PA level, data rate, sweep method. Multi-radio parallel mode.</p>
+          <h3>Sub-GHz</h3>
+          <p>CC1101 OOK/FSK jamming. Spot / range / hopper / keyfob presets. Record and replay RAW bitstreams as Flipper-compatible <code>.sub</code> files.</p>
+        </div>
+
+        <div class="card help__section">
+          <h2>API quick reference</h2>
+          <pre>GET    /api/status          System state
+GET    /api/spectrum         RSSI array (band param)
+POST   /api/attack/start     { module, method }
+POST   /api/attack/stop      {}
+GET    /api/attack/list      All registered attacks
+GET    /api/settings         All settings
+POST   /api/settings         { ... }     (partial update)
+POST   /api/reset            Reboot
+POST   /api/ota              Multipart .bin upload
+GET    /api/files?path=...   List files
+GET    /api/files/&lt;name&gt;     Download file
+DELETE /api/files/&lt;name&gt;     Delete file
+POST   /api/cli              { cmd } → { output }</pre>
+        </div>
+
+        <div class="card help__section">
+          <h2>Safety</h2>
+          <p>PhantomRF is a research tool. <strong>Never</strong> use it on networks or devices you do not own or have explicit permission to test. Unauthorised jamming is illegal in most jurisdictions. The device is designed to be loud — keep PA levels conservative and sweep range narrow when learning.</p>
+          <p>See <code>docs/legal/</code> for the full disclaimer.</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============================================================== -->
+  <!--  Modal (single, reused)                                         -->
+  <!-- ============================================================== -->
+  <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal" id="modal">
+      <div class="modal__header">
+        <h2 class="modal__title" id="modal-title">Confirm</h2>
+        <button class="modal__close" type="button" id="modal-close" aria-label="Close">×</button>
+      </div>
+      <div class="modal__body" id="modal-body"></div>
+      <div class="modal__footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!--  Toasts                                                          -->
+  <!-- ============================================================== -->
+  <div class="toasts" id="toasts" role="region" aria-live="polite" aria-label="Notifications"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

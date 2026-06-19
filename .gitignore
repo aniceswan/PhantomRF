@@ -1,0 +1,210 @@
+# =============================================================================
+#  PhantomRF — .gitignore
+# =============================================================================
+#  Comprehensive ignore list for an ESP32 / PlatformIO / Arduino project that
+#  also ships a web flasher and a Python-based build toolchain.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# PlatformIO build artifacts
+# -----------------------------------------------------------------------------
+.pio/
+.pioenvs/
+.piolibdeps/
+.pio/libdeps/
+.pio/packages/
+.pio/build/
+.vscode/.browse.VC.db
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch/
+
+# -----------------------------------------------------------------------------
+# Generic build output
+# -----------------------------------------------------------------------------
+build/
+dist/
+out/
+bin/
+obj/
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.map
+*.lst
+*.sym
+*.su
+*.idb
+*.pdb
+
+# -----------------------------------------------------------------------------
+# Compiled firmware artifacts
+# -----------------------------------------------------------------------------
+*.bin
+*.bin.gz
+*.elf
+*.hex
+*.uf2
+*.rom
+*.rkh
+*.rsp
+
+# -----------------------------------------------------------------------------
+# Logs
+# -----------------------------------------------------------------------------
+*.log
+*.log.*
+*.log.gz
+logs/
+
+# -----------------------------------------------------------------------------
+# IDE / editor cruft
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.*.sw[a-p]
+.nvim/
+.nvimlog
+.compile_flags.txt
+.ccls-cache/
+.cquery/
+.cmake-cache/
+
+# -----------------------------------------------------------------------------
+# OS metadata
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+Thumbs.db
+$RECYCLE.BIN/
+
+# -----------------------------------------------------------------------------
+# Caches
+# -----------------------------------------------------------------------------
+.cache/
+.clangd/
+.clang-tidy
+compile_commands.json
+.ccache/
+CTestTestfile.cmake
+
+# -----------------------------------------------------------------------------
+# Python (post_build.py, tools/, docs build, etc.)
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.nox/
+venv/
+.venv/
+env/
+.python-version
+
+# -----------------------------------------------------------------------------
+# Node / web flasher
+# -----------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.npm
+.yarn
+.pnpm-store/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.bower_components/
+
+# -----------------------------------------------------------------------------
+# Web build artifacts
+# -----------------------------------------------------------------------------
+web/dist/
+web/build/
+web/.cache/
+web/.parcel-cache/
+web/node_modules/
+
+# -----------------------------------------------------------------------------
+# Secrets — NEVER commit
+# -----------------------------------------------------------------------------
+secrets.h
+secrets.cpp
+secrets.json
+secrets.yaml
+secrets.yml
+secrets.ini
+.env
+.env.*
+!.env.example
+
+# -----------------------------------------------------------------------------
+# Temporary / scratch files
+# -----------------------------------------------------------------------------
+*.tmp
+*.bak
+*.backup
+*.orig
+*.rej
+*.patch
+*.diff
+*.sav
+*.autosave
+*.unsaved
+scratch/
+tmp/
+temp/
+
+# -----------------------------------------------------------------------------
+# Documentation build output
+# -----------------------------------------------------------------------------
+docs/_build/
+docs/site/
+site/
+.mkdocs/
+.docusaurus/
+book/
+
+# -----------------------------------------------------------------------------
+# CI / release artifacts
+# -----------------------------------------------------------------------------
+coverage/
+artifacts/
+*.zip
+*.tar.gz
+*.tgz
+release/
+
+# -----------------------------------------------------------------------------
+# Local overrides / personal
+# -----------------------------------------------------------------------------
+.clang-format.local
+.local/
+overrides/

@@ -1,0 +1,156 @@
+name: test
+
+# ============================================================================
+#  PhantomRF — Host-side unit tests
+# ----------------------------------------------------------------------------
+#  Runs the `native` PlatformIO environment (Unity test framework, no
+#  hardware) on every push and PR. The summary is posted back to the PR as
+#  a single comment (replaces any previous bot comment on the same PR).
+#
+#  Test sources live in tests/ and use the #ifdef PHM_NATIVE_TEST branch in
+#  native_mock.h to swap Arduino/ESP32 APIs for stdlib equivalents.
+# ============================================================================
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: "unit tests (native)"
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pio
+          key: pio-test-${{ hashFiles('platformio.ini', 'tests/**') }}
+          restore-keys: |
+            pio-test-
+            pio-
+
+      - name: Install PlatformIO CLI
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio==6.1.16
+          pio --version
+
+      # PlatformIO defaults to looking for tests in a `test/` directory,
+      # but PhantomRF stores them in `tests/` (matching the rest of the
+      # repo). Create a one-line symlink so `pio test -e native` finds
+      # them without anyone needing to edit `platformio.ini`.
+      - name: Symlink test -> tests for PlatformIO
+        run: |
+          if [ ! -e test ]; then
+            ln -s tests test
+          fi
+
+      - name: Discover available test environments
+        id: discover
+        run: |
+          python3 - <<'PY'
+          import configparser, os
+          cp = configparser.ConfigParser()
+          cp.read("platformio.ini")
+          envs = [s.split(":", 1)[1] for s in cp.sections() if s.startswith("env:")]
+          print("::set-output name=envs::" + ",".join(envs))
+          PY
+
+      - name: Run host unit tests
+        id: tests
+        run: |
+          set -euo pipefail
+          pio test -e native --without-uploading --junit-output-path junit.xml \
+            2>&1 | tee test-run.log
+          # Convert plain-text Unity summary into a JUnit XML we can attach
+          # as an artifact. PlatformIO will already emit junit.xml at the
+          # path we passed, so this is a fallback no-op safety net.
+          ls -la junit.xml 2>/dev/null || true
+
+      - name: Build a JUnit report if missing
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ ! -f junit.xml ]; then
+            echo "PlatformIO did not emit junit.xml, generating a stub from test-run.log"
+            python3 - <<'PY'
+          import datetime, pathlib
+          stamp = datetime.datetime.utcnow().isoformat() + "Z"
+          report = pathlib.Path("junit.xml")
+          report.write_text(f"""<?xml version="1.0" encoding="UTF-8"?>
+          <testsuites name="phantomrf-native" tests="0" failures="0" time="0">
+            <testsuite name="native" tests="0" failures="0" time="0" timestamp="{stamp}"/>
+          </testsuites>
+          """)
+          PY
+          fi
+
+      - name: Upload JUnit test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-report
+          path: junit.xml
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload raw test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log
+          path: test-run.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # --------------------------------------------------------------------------
+  # PR summary — sticky comment with a brief PASS/FAIL banner.
+  # --------------------------------------------------------------------------
+  summary:
+    name: "PR summary"
+    runs-on: ubuntu-22.04
+    needs: unit
+    if: github.event_name == 'pull_request' && always()
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: phantomrf-tests
+          message: |
+            ## 🧪 PhantomRF Unit Test Report
+
+            | Suite | Result | Details |
+            |---|---|---|
+            | `native` (Unity) | ${{ needs.unit.result }} | [JUnit](${{ env.RUN_URL }}) · [raw log](${{ env.RUN_URL }}) |
+
+            *Triggered by @${{ github.actor }} on `${{ github.ref }}`. See the **Checks** tab for the full pipeline.*
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
