@@ -210,16 +210,16 @@ private:
     /// Internal helper — power-down the chip
     void powerDown();
 
-    uint8_t     id_;
-    Nrf24Pins   pins_;
-    uint8_t     paLevel_;
-    uint8_t     dataRate_;
-    uint8_t     channel_;
-    bool        running_;
-    bool        connected_;
+    uint8_t id_;
+    Nrf24Pins pins_;
+    uint8_t paLevel_;
+    uint8_t dataRate_;
+    uint8_t channel_;
+    bool running_;
+    bool connected_;
 
-    RF24*       radio_;     ///< Owned by this object
-    SPIClass*   spi_;       ///< Not owned; lifetime managed by manager
+    RF24* radio_;    ///< Owned by this object
+    SPIClass* spi_;  ///< Not owned; lifetime managed by manager
 };
 
 /**
@@ -229,12 +229,12 @@ private:
  * the last two describe how multiple radios cooperate.
  */
 enum class Nrf24SweepMethod : uint8_t {
-    List      = 0,  ///< Walk a predefined list (BT AFH, BLE adv, ...)
-    Random    = 1,  ///< Pick a random channel each loop
-    Brute     = 2,  ///< Step sequentially through the full range
-    NoAck     = 3,  ///< Use NOACK flood instead of constant carrier
-    Together  = 0x80,  ///< (flag bit) All radios on the same channel
-    Separate  = 0x81,  ///< (flag bit) Round-robin `i = ch % count`
+    List = 0,         ///< Walk a predefined list (BT AFH, BLE adv, ...)
+    Random = 1,       ///< Pick a random channel each loop
+    Brute = 2,        ///< Step sequentially through the full range
+    NoAck = 3,        ///< Use NOACK flood instead of constant carrier
+    Together = 0x80,  ///< (flag bit) All radios on the same channel
+    Separate = 0x81,  ///< (flag bit) Round-robin `i = ch % count`
 };
 
 /// OR-able flags / methods packed into one byte for `jamSweep()`.
@@ -309,22 +309,22 @@ private:
     void applySweepStep(uint8_t ch);
 
     // ---- State ----------------------------------------------------------
-    Nrf24*      radios_[5] = {nullptr};
-    uint8_t     count_      = 0;
-    bool        running_    = false;
+    Nrf24* radios_[5] = {nullptr};
+    uint8_t count_ = 0;
+    bool running_ = false;
 
     // Sweep parameters (consumed by the worker)
-    uint8_t     startCh_    = 0;
-    uint8_t     stopCh_     = 0;
-    uint8_t     method_     = 0;
-    bool        separate_   = true;   ///< false = Together, true = Separate
-    bool        noAck_      = false;  ///< true = NOACK flood, false = CW
+    uint8_t startCh_ = 0;
+    uint8_t stopCh_ = 0;
+    uint8_t method_ = 0;
+    bool separate_ = true;  ///< false = Together, true = Separate
+    bool noAck_ = false;    ///< true = NOACK flood, false = CW
 
     // Worker task
-    void*        workerTask_ = nullptr;
+    void* workerTask_ = nullptr;
 
     // SPI bus shared by every radio
-    SPIClass*    spi_ = nullptr;     ///< Owned by this object
+    SPIClass* spi_ = nullptr;  ///< Owned by this object
 };
 
 /// Singleton, defined in Nrf24.cpp

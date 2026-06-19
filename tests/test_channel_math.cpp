@@ -19,17 +19,18 @@
 
 #include <cstdio>
 #include <cstdlib>
+
 #include <unity.h>
 
 // We are testing the *real* implementation, not a stub.
 #include "utils/ChannelMath.h"
 
-using phm::util::Nrf24Range;
 using phm::util::bleChannelToNrf24;
 using phm::util::cc1101FreqToReg;
 using phm::util::cc1101RegToFreq;
 using phm::util::nrf24ChannelToFreq;
 using phm::util::nrf24FreqToChannel;
+using phm::util::Nrf24Range;
 using phm::util::nrf24ToBleChannel;
 using phm::util::wifiChannelToNrf24Range;
 using phm::util::zigbeeChannelToNrf24Range;
@@ -137,7 +138,7 @@ void testCc1101RegToFreq_round_trip(void) {
     const float mhz_list[] = {315.0f, 433.92f, 868.0f, 915.0f};
     for (float mhz : mhz_list) {
         const uint32_t r1 = cc1101FreqToReg(mhz);
-        const float   f  = cc1101RegToFreq(r1);
+        const float f = cc1101RegToFreq(r1);
         const uint32_t r2 = cc1101FreqToReg(f);
         // Truncation is at most 1 LSB; we accept that.
         const uint32_t diff = (r1 > r2) ? (r1 - r2) : (r2 - r1);
@@ -151,7 +152,7 @@ void testCc1101RegToFreq_round_trip(void) {
 
 void testWifiChannelToNrf24Range_ch1(void) {
     const Nrf24Range r = wifiChannelToNrf24Range(1u);
-    TEST_ASSERT_EQUAL_UINT8(1u,  r.start);
+    TEST_ASSERT_EQUAL_UINT8(1u, r.start);
     TEST_ASSERT_EQUAL_UINT8(23u, r.stop);
 }
 
@@ -211,8 +212,8 @@ void testZigbeeChannelToNrf24Range_ch26(void) {
 void testZigbeeChannelToNrf24Range_clamps_out_of_range(void) {
     // Below 11 — clamp to 11.
     Nrf24Range r = zigbeeChannelToNrf24Range(0u);
-    TEST_ASSERT_EQUAL_UINT8(4u,  r.start);
-    TEST_ASSERT_EQUAL_UINT8(6u,  r.stop);
+    TEST_ASSERT_EQUAL_UINT8(4u, r.start);
+    TEST_ASSERT_EQUAL_UINT8(6u, r.stop);
     // Above 26 — clamp to 26.
     r = zigbeeChannelToNrf24Range(99u);
     TEST_ASSERT_EQUAL_UINT8(79u, r.start);
@@ -234,7 +235,7 @@ void testBleAdvChannels_match_2_26_80(void) {
     // The advertising channels themselves are at special positions
     // (2402 / 2426 / 2480) and are not on the data-channel grid; the
     // production code does not special-case them.
-    TEST_ASSERT_EQUAL_UINT8(0u,  nrf24ToBleChannel(2u));   // 2402 MHz → BLE ch 0
+    TEST_ASSERT_EQUAL_UINT8(0u, nrf24ToBleChannel(2u));    // 2402 MHz → BLE ch 0
     TEST_ASSERT_EQUAL_UINT8(12u, nrf24ToBleChannel(26u));  // 2426 MHz → BLE ch 12
     TEST_ASSERT_EQUAL_UINT8(39u, nrf24ToBleChannel(80u));  // 2480 MHz → BLE ch 39
 }
@@ -247,8 +248,7 @@ void testBleDataChannels_cover_even_nrf24_ch_2_to_80(void) {
     // should map back to a valid BLE data channel.
     for (uint16_t nrf_ch = 2; nrf_ch <= 80; nrf_ch += 2) {
         const uint8_t ble = nrf24ToBleChannel(static_cast<uint8_t>(nrf_ch));
-        TEST_ASSERT_NOT_EQUAL_MESSAGE(0xFFu, ble,
-            "nRF24 channel did not map back to a BLE channel");
+        TEST_ASSERT_NOT_EQUAL_MESSAGE(0xFFu, ble, "nRF24 channel did not map back to a BLE channel");
         // The round-trip through freq should reproduce the same nRF24 ch.
         const uint8_t nrf2 = bleChannelToNrf24(ble);
         TEST_ASSERT_EQUAL_UINT8(static_cast<uint8_t>(nrf_ch), nrf2);
@@ -267,7 +267,7 @@ void testNrf24ToBleChannel_rejects_ble_adv_gap(void) {
     // already part of the data channel space, but the inverse
     // mapping (nRF24 → BLE) for those exact channels should still
     // return a valid BLE channel — they're physically on the grid.
-    TEST_ASSERT_EQUAL_UINT8(0u,  nrf24ToBleChannel(2u));   // BLE ch 0
+    TEST_ASSERT_EQUAL_UINT8(0u, nrf24ToBleChannel(2u));    // BLE ch 0
     TEST_ASSERT_EQUAL_UINT8(12u, nrf24ToBleChannel(26u));  // BLE ch 12
     TEST_ASSERT_EQUAL_UINT8(39u, nrf24ToBleChannel(80u));  // BLE ch 39
 }

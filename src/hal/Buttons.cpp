@@ -10,12 +10,12 @@
  * @date 2026
  */
 #include "hal/Buttons.h"
-#include <GyverButton.h>
-
-#include <Arduino.h>
 
 #include "core/Config.h"
 #include "utils/Logger.h"
+
+#include <Arduino.h>
+#include <GyverButton.h>
 
 namespace phm::hal {
 
@@ -25,13 +25,13 @@ namespace phm::hal {
 Buttons g_buttons;
 
 // Debounce / timing constants — picked to feel snappy on a 128x64 OLED
-static constexpr uint16_t kDebounceMs     = 35;
-static constexpr uint16_t kLongPressMs    = 600;
-static constexpr uint16_t kDoubleClickMs  = 300;
+static constexpr uint16_t kDebounceMs = 35;
+static constexpr uint16_t kLongPressMs = 600;
+static constexpr uint16_t kDoubleClickMs = 300;
 
 // ---------------------------------------------------------------------------
 void Buttons::setup() {
-    const int8_t pinOk   = g_board.pin(PinRole::ButtonOk);
+    const int8_t pinOk = g_board.pin(PinRole::ButtonOk);
     const int8_t pinNext = g_board.pin(PinRole::ButtonNext);
     const int8_t pinPrev = g_board.pin(PinRole::ButtonPrev);
 
@@ -54,25 +54,27 @@ void Buttons::setup() {
         btnPrev_->setClickTimeout(kDoubleClickMs);
     }
 
-    LOGD("btn", "buttons: OK=%d NEXT=%d PREV=%d (cfg=%u)",
-         static_cast<int>(pinOk), static_cast<int>(pinNext),
+    LOGD("btn", "buttons: OK=%d NEXT=%d PREV=%d (cfg=%u)", static_cast<int>(pinOk), static_cast<int>(pinNext),
          static_cast<int>(pinPrev), static_cast<unsigned>(config_));
 }
 
 // ---------------------------------------------------------------------------
 void Buttons::update() {
-    if (btnOk_   != nullptr) btnOk_->tick();
-    if (btnNext_ != nullptr) btnNext_->tick();
-    if (btnPrev_ != nullptr) btnPrev_->tick();
+    if (btnOk_ != nullptr)
+        btnOk_->tick();
+    if (btnNext_ != nullptr)
+        btnNext_->tick();
+    if (btnPrev_ != nullptr)
+        btnPrev_->tick();
 }
 
 // ---------------------------------------------------------------------------
 bool Buttons::wasPressed(ButtonId id) {
     ::GButton* b = nullptr;
     switch (id) {
-        case ButtonId::Ok:   b = btnOk_;   break;
-        case ButtonId::Next: b = btnNext_; break;
-        case ButtonId::Prev: b = btnPrev_; break;
+    case ButtonId::Ok: b = btnOk_; break;
+    case ButtonId::Next: b = btnNext_; break;
+    case ButtonId::Prev: b = btnPrev_; break;
     }
     return (b != nullptr) && b->isPress();
 }
@@ -81,9 +83,9 @@ bool Buttons::wasPressed(ButtonId id) {
 bool Buttons::wasLongPressed(ButtonId id) {
     ::GButton* b = nullptr;
     switch (id) {
-        case ButtonId::Ok:   b = btnOk_;   break;
-        case ButtonId::Next: b = btnNext_; break;
-        case ButtonId::Prev: b = btnPrev_; break;
+    case ButtonId::Ok: b = btnOk_; break;
+    case ButtonId::Next: b = btnNext_; break;
+    case ButtonId::Prev: b = btnPrev_; break;
     }
     return (b != nullptr) && b->isHold();
 }
@@ -92,16 +94,17 @@ bool Buttons::wasLongPressed(ButtonId id) {
 bool Buttons::wasDoublePressed(ButtonId id) {
     ::GButton* b = nullptr;
     switch (id) {
-        case ButtonId::Ok:   b = btnOk_;   break;
-        case ButtonId::Next: b = btnNext_; break;
-        case ButtonId::Prev: b = btnPrev_; break;
+    case ButtonId::Ok: b = btnOk_; break;
+    case ButtonId::Next: b = btnNext_; break;
+    case ButtonId::Prev: b = btnPrev_; break;
     }
     return (b != nullptr) && b->isDouble();
 }
 
 // ---------------------------------------------------------------------------
 void Buttons::setConfig(uint8_t n) {
-    if (n > 2) n = 2;
+    if (n > 2)
+        n = 2;
     config_ = n;
     LOGD("btn", "button config set to %u", static_cast<unsigned>(n));
 }
@@ -109,9 +112,9 @@ void Buttons::setConfig(uint8_t n) {
 // ---------------------------------------------------------------------------
 bool Buttons::isWired(ButtonId id) const {
     switch (id) {
-        case ButtonId::Ok:   return btnOk_   != nullptr;
-        case ButtonId::Next: return btnNext_ != nullptr;
-        case ButtonId::Prev: return btnPrev_ != nullptr;
+    case ButtonId::Ok: return btnOk_ != nullptr;
+    case ButtonId::Next: return btnNext_ != nullptr;
+    case ButtonId::Prev: return btnPrev_ != nullptr;
     }
     return false;
 }

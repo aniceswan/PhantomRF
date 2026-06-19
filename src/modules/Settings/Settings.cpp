@@ -15,7 +15,10 @@
  */
 #include "modules/Settings/Settings.h"
 
-#include <string.h>
+#include "core/Config.h"
+#include "core/State.h"
+#include "hal/Storage.h"
+#include "utils/Logger.h"
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
@@ -23,11 +26,7 @@
 #include <esp_system.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-
-#include "core/Config.h"
-#include "core/State.h"
-#include "hal/Storage.h"
-#include "utils/Logger.h"
+#include <string.h>
 
 namespace phm::modules {
 
@@ -39,11 +38,10 @@ SettingsModule g_settings;
 static constexpr const char* kTag = "settings";
 static constexpr uint16_t kApPasswordLength = 16;
 /// Allowed alphabet for the AP password (no shell-confusing chars)
-static constexpr const char* kApAlphabet =
-    "ABCDEFGHJKLMNPQRSTUVWXYZ"
-    "abcdefghijkmnopqrstuvwxyz"
-    "23456789"
-    "!@#$%^&*";
+static constexpr const char* kApAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ"
+                                           "abcdefghijkmnopqrstuvwxyz"
+                                           "23456789"
+                                           "!@#$%^&*";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -110,8 +108,8 @@ String SettingsModule::toJson() {
     JsonDocument doc;
 
     // nRF24 settings
-    doc["nrf24"]["count"]     = getIntOr("nrf24.count", 1);
-    doc["nrf24"]["pa"]        = getIntOr("nrf24.pa", 0);
+    doc["nrf24"]["count"] = getIntOr("nrf24.count", 1);
+    doc["nrf24"]["pa"] = getIntOr("nrf24.pa", 0);
     doc["nrf24"]["data_rate"] = getIntOr("nrf24.data_rate", 2);
 
     // CE / CSN pin arrays: stored as a 5-byte blob in NVS.
@@ -121,44 +119,47 @@ String SettingsModule::toJson() {
     hal::g_storage.getBytes("nrf24.csn_pins", csnPins, sizeof(csnPins));
     JsonArray ce = doc["nrf24"]["ce_pins"].to<JsonArray>();
     JsonArray csn = doc["nrf24"]["csn_pins"].to<JsonArray>();
-    for (int i = 0; i < 5; ++i) { ce.add(cePins[i]); csn.add(csnPins[i]); }
+    for (int i = 0; i < 5; ++i) {
+        ce.add(cePins[i]);
+        csn.add(csnPins[i]);
+    }
 
     // CC1101
-    doc["cc1101"]["present"]      = getBoolOr("cc1101.present", true);
-    doc["cc1101"]["sampling_us"]  = getIntOr("cc1101.sampling_us", 150);
-    doc["cc1101"]["payload"]      = getIntOr("cc1101.payload", 60);
+    doc["cc1101"]["present"] = getBoolOr("cc1101.present", true);
+    doc["cc1101"]["sampling_us"] = getIntOr("cc1101.sampling_us", 150);
+    doc["cc1101"]["payload"] = getIntOr("cc1101.payload", 60);
 
     // BLE / WiFi / Spectrum
-    doc["ble"]["method"]          = getIntOr("ble.method", 0);
-    doc["wifi"]["jam_method"]     = getIntOr("wifi.jam_method", 0);
-    doc["wifi"]["deauth_method"]  = getIntOr("wifi.deauth_method", 0);
-    doc["spectrum"]["window_ms"]  = getIntOr("spectrum.window_ms", 100);
+    doc["ble"]["method"] = getIntOr("ble.method", 0);
+    doc["wifi"]["jam_method"] = getIntOr("wifi.jam_method", 0);
+    doc["wifi"]["deauth_method"] = getIntOr("wifi.deauth_method", 0);
+    doc["spectrum"]["window_ms"] = getIntOr("spectrum.window_ms", 100);
 
     // AP
-    doc["ap"]["ssid"]     = getOr("ap.ssid", "PhantomRF");
-    doc["ap"]["enabled"]   = getBoolOr("ap.enabled", true);
+    doc["ap"]["ssid"] = getOr("ap.ssid", "PhantomRF");
+    doc["ap"]["enabled"] = getBoolOr("ap.enabled", true);
     // Don't echo the password back unless explicitly requested — keep
     // it in a separate "ap.password_hint" field showing only length.
     String pw;
     if (hal::g_storage.getString("ap.password", pw)) {
-        doc["ap"]["password_hint"] = "*";   // redacted
-        doc["ap"]["password_len"]  = pw.length();
+        doc["ap"]["password_hint"] = "*";  // redacted
+        doc["ap"]["password_len"] = pw.length();
     } else {
         doc["ap"]["password_hint"] = "(unset)";
     }
 
     // OLED / buttons / sweep
-    doc["oled"]["enabled"]    = getBoolOr("oled.enabled", true);
+    doc["oled"]["enabled"] = getBoolOr("oled.enabled", true);
     doc["oled"]["brightness"] = getIntOr("oled.brightness", 255);
-    doc["buttons"]["config"]  = getIntOr("buttons.config", 2);
-    doc["sweep"]["method"]    = getIntOr("sweep.method", 0);
+    doc["buttons"]["config"] = getIntOr("buttons.config", 2);
+    doc["sweep"]["method"] = getIntOr("sweep.method", 0);
 
     // Battery calibration (mV/ADC-step, default ~1200)
     doc["battery"]["calibration"] = getIntOr("battery.calibration", 1200);
 
     // Build info
-    doc["build"]["version"]   = PHM_VERSION_STRING;
-    doc["build"]["board"]     = "unknown";
+    doc["build"]["version"] = PHM_VERSION_STRING;
+    doc["build"]["board"] = "unknown";
 
     String out;
     serializeJson(doc, out);
@@ -180,32 +181,42 @@ bool SettingsModule::fromJson(const String& json) {
 
     // Helper lambdas: walk a JSON value, persist the matching NVS key.
     auto writeString = [&](const char* jsonKey, const char* nvsKey) {
-        if (!doc[jsonKey].is<const char*>()) return;
+        if (!doc[jsonKey].is<const char*>())
+            return;
         const char* v = doc[jsonKey].as<const char*>();
-        if (!validateKey(nvsKey, v)) { ok = false; return; }
+        if (!validateKey(nvsKey, v)) {
+            ok = false;
+            return;
+        }
         hal::g_storage.setString(nvsKey, v);
     };
     auto writeInt = [&](const char* jsonKey, const char* nvsKey) {
-        if (!doc[jsonKey].is<int>()) return;
+        if (!doc[jsonKey].is<int>())
+            return;
         const int32_t v = doc[jsonKey].as<int32_t>();
-        if (!validateKey(nvsKey, v)) { ok = false; return; }
+        if (!validateKey(nvsKey, v)) {
+            ok = false;
+            return;
+        }
         hal::g_storage.setInt(nvsKey, v);
     };
     auto writeBool = [&](const char* jsonKey, const char* nvsKey) {
-        if (!doc[jsonKey].is<bool>()) return;
+        if (!doc[jsonKey].is<bool>())
+            return;
         const int32_t v = doc[jsonKey].as<bool>() ? 1 : 0;
         hal::g_storage.setInt(nvsKey, v);
     };
 
     // nRF24
-    writeInt("nrf24.count",     "nrf24.count");
-    writeInt("nrf24.pa",        "nrf24.pa");
+    writeInt("nrf24.count", "nrf24.count");
+    writeInt("nrf24.pa", "nrf24.pa");
     writeInt("nrf24.data_rate", "nrf24.data_rate");
     if (doc["nrf24"]["ce_pins"].is<JsonArray>()) {
         uint8_t pins[5] = {0};
         size_t i = 0;
         for (int v : doc["nrf24"]["ce_pins"].as<JsonArray>()) {
-            if (i >= 5) break;
+            if (i >= 5)
+                break;
             pins[i++] = static_cast<uint8_t>(v);
         }
         hal::g_storage.setBytes("nrf24.ce_pins", pins, sizeof(pins));
@@ -214,26 +225,27 @@ bool SettingsModule::fromJson(const String& json) {
         uint8_t pins[5] = {0};
         size_t i = 0;
         for (int v : doc["nrf24"]["csn_pins"].as<JsonArray>()) {
-            if (i >= 5) break;
+            if (i >= 5)
+                break;
             pins[i++] = static_cast<uint8_t>(v);
         }
         hal::g_storage.setBytes("nrf24.csn_pins", pins, sizeof(pins));
     }
 
     // CC1101
-    writeBool("cc1101.present",   "cc1101.present");
-    writeInt ("cc1101.sampling_us","cc1101.sampling_us");
-    writeInt ("cc1101.payload",    "cc1101.payload");
+    writeBool("cc1101.present", "cc1101.present");
+    writeInt("cc1101.sampling_us", "cc1101.sampling_us");
+    writeInt("cc1101.payload", "cc1101.payload");
 
     // BLE / WiFi / Spectrum
-    writeInt("ble.method",          "ble.method");
-    writeInt("wifi.jam_method",     "wifi.jam_method");
-    writeInt("wifi.deauth_method",  "wifi.deauth_method");
-    writeInt("spectrum.window_ms",  "spectrum.window_ms");
+    writeInt("ble.method", "ble.method");
+    writeInt("wifi.jam_method", "wifi.jam_method");
+    writeInt("wifi.deauth_method", "wifi.deauth_method");
+    writeInt("spectrum.window_ms", "spectrum.window_ms");
 
     // AP
-    writeString("ap.ssid",   "ap.ssid");
-    writeBool  ("ap.enabled","ap.enabled");
+    writeString("ap.ssid", "ap.ssid");
+    writeBool("ap.enabled", "ap.enabled");
     if (doc["ap"]["password"].is<const char*>()) {
         const char* pw = doc["ap"]["password"].as<const char*>();
         if (pw != nullptr && strlen(pw) >= 8 && strlen(pw) <= 64) {
@@ -244,10 +256,10 @@ bool SettingsModule::fromJson(const String& json) {
     }
 
     // OLED / buttons / sweep
-    writeBool("oled.enabled",   "oled.enabled");
-    writeInt ("oled.brightness","oled.brightness");
-    writeInt ("buttons.config", "buttons.config");
-    writeInt ("sweep.method",   "sweep.method");
+    writeBool("oled.enabled", "oled.enabled");
+    writeInt("oled.brightness", "oled.brightness");
+    writeInt("buttons.config", "buttons.config");
+    writeInt("sweep.method", "sweep.method");
 
     // Battery
     writeInt("battery.calibration", "battery.calibration");
@@ -261,7 +273,8 @@ bool SettingsModule::fromJson(const String& json) {
 // Validation
 // ---------------------------------------------------------------------------
 bool SettingsModule::validateKey(const char* key, const char* value) {
-    if (key == nullptr || value == nullptr) return false;
+    if (key == nullptr || value == nullptr)
+        return false;
     if (strcmp(key, "ap.ssid") == 0) {
         const size_t len = strlen(value);
         return len >= 1 && len <= 32;
@@ -270,20 +283,34 @@ bool SettingsModule::validateKey(const char* key, const char* value) {
 }
 
 bool SettingsModule::validateKey(const char* key, int32_t value) {
-    if (key == nullptr) return false;
-    if (strcmp(key, "nrf24.count") == 0)    return value >= 1 && value <= 5;
-    if (strcmp(key, "nrf24.pa") == 0)       return value >= 0 && value <= 3;
-    if (strcmp(key, "nrf24.data_rate") == 0) return value >= 0 && value <= 2;
-    if (strcmp(key, "cc1101.sampling_us") == 0) return value >= 10 && value <= 10000;
-    if (strcmp(key, "cc1101.payload") == 0)     return value >= 1  && value <= 255;
-    if (strcmp(key, "ble.method") == 0)      return value >= 0 && value <= 1;
-    if (strcmp(key, "wifi.jam_method") == 0) return value >= 0 && value <= 2;
-    if (strcmp(key, "wifi.deauth_method") == 0) return value >= 0 && value <= 2;
-    if (strcmp(key, "spectrum.window_ms") == 0) return value >= 10 && value <= 5000;
-    if (strcmp(key, "oled.brightness") == 0) return value >= 0 && value <= 255;
-    if (strcmp(key, "buttons.config") == 0)  return value >= 0 && value <= 2;
-    if (strcmp(key, "sweep.method") == 0)    return value >= 0 && value <= 1;
-    if (strcmp(key, "battery.calibration") == 0) return value >= 100 && value <= 5000;
+    if (key == nullptr)
+        return false;
+    if (strcmp(key, "nrf24.count") == 0)
+        return value >= 1 && value <= 5;
+    if (strcmp(key, "nrf24.pa") == 0)
+        return value >= 0 && value <= 3;
+    if (strcmp(key, "nrf24.data_rate") == 0)
+        return value >= 0 && value <= 2;
+    if (strcmp(key, "cc1101.sampling_us") == 0)
+        return value >= 10 && value <= 10000;
+    if (strcmp(key, "cc1101.payload") == 0)
+        return value >= 1 && value <= 255;
+    if (strcmp(key, "ble.method") == 0)
+        return value >= 0 && value <= 1;
+    if (strcmp(key, "wifi.jam_method") == 0)
+        return value >= 0 && value <= 2;
+    if (strcmp(key, "wifi.deauth_method") == 0)
+        return value >= 0 && value <= 2;
+    if (strcmp(key, "spectrum.window_ms") == 0)
+        return value >= 10 && value <= 5000;
+    if (strcmp(key, "oled.brightness") == 0)
+        return value >= 0 && value <= 255;
+    if (strcmp(key, "buttons.config") == 0)
+        return value >= 0 && value <= 2;
+    if (strcmp(key, "sweep.method") == 0)
+        return value >= 0 && value <= 1;
+    if (strcmp(key, "battery.calibration") == 0)
+        return value >= 100 && value <= 5000;
     return true;
 }
 

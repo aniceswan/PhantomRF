@@ -14,22 +14,6 @@
  * @date 2026
  */
 #include "ui/cli/Console.h"
-#include "hal/Storage.h"
-#include "core/State.h"
-#include "modules/Nrf24Jammer/Nrf24Jammer.h"
-#include "modules/Cc1101Jammer/Cc1101Jammer.h"
-#include "modules/WifiAttack/WifiAttack.h"
-#include "modules/BleAttack/BleAttack.h"
-#include "modules/Spectrum/Spectrum.h"
-#include "utils/Logger.h"
-
-#include <Arduino.h>
-#include <algorithm>
-#include <cctype>
-#include <cstring>
-#include <cstdlib>
-
-#include <esp_system.h>
 
 #include "core/Config.h"
 #include "core/EventBus.h"
@@ -40,16 +24,29 @@
 #include "hal/Led.h"
 #include "hal/Power.h"
 #include "hal/Storage.h"
+#include "modules/BleAttack/BleAttack.h"
+#include "modules/Cc1101Jammer/Cc1101Jammer.h"
+#include "modules/Nrf24Jammer/Nrf24Jammer.h"
+#include "modules/Spectrum/Spectrum.h"
+#include "modules/WifiAttack/WifiAttack.h"
 #include "utils/ChannelMath.h"
 #include "utils/Logger.h"
 
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
+
+#include <Arduino.h>
+#include <esp_system.h>
+
 namespace phm::ui {
 
-using phm::hal::g_storage;
+using phm::hal::g_board;
 using phm::hal::g_buttons;
 using phm::hal::g_led;
-using phm::hal::g_board;
 using phm::hal::g_power;
+using phm::hal::g_storage;
 
 // ---------------------------------------------------------------------------
 // Singleton
@@ -65,21 +62,21 @@ struct CmdEntry {
     const char* help;
 };
 static const CmdEntry kCommands[] = {
-    { "help",     "List commands" },
-    { "?",        "Alias for help" },
-    { "info",     "Device info (version, heap, uptime)" },
-    { "status",   "Current state (which module, which attack)" },
-    { "attack",   "Start an attack (subcommand: bt, ble, wifi, 2_4, subghz, drone, spec, stop)" },
-    { "stop",     "Stop the current attack" },
-    { "scan",     "Scan networks / devices (wifi, ble)" },
-    { "record",   "Record sub-GHz signal (record <mhz> [ms])" },
-    { "replay",   "Replay last recording (replay <mhz>)" },
-    { "set",      "Set NVS key (set <key> <value>)" },
-    { "get",      "Get NVS key (get <key>)" },
-    { "save",     "Save current settings to flash" },
-    { "history",  "Show command history" },
-    { "reboot",   "Reboot device" },
-    { "reset",    "Factory reset (clears NVS)" },
+    {"help", "List commands"},
+    {"?", "Alias for help"},
+    {"info", "Device info (version, heap, uptime)"},
+    {"status", "Current state (which module, which attack)"},
+    {"attack", "Start an attack (subcommand: bt, ble, wifi, 2_4, subghz, drone, spec, stop)"},
+    {"stop", "Stop the current attack"},
+    {"scan", "Scan networks / devices (wifi, ble)"},
+    {"record", "Record sub-GHz signal (record <mhz> [ms])"},
+    {"replay", "Replay last recording (replay <mhz>)"},
+    {"set", "Set NVS key (set <key> <value>)"},
+    {"get", "Get NVS key (get <key>)"},
+    {"save", "Save current settings to flash"},
+    {"history", "Show command history"},
+    {"reboot", "Reboot device"},
+    {"reset", "Factory reset (clears NVS)"},
 };
 static constexpr size_t kCommandCount = sizeof(kCommands) / sizeof(kCommands[0]);
 
@@ -89,9 +86,7 @@ static constexpr size_t kCommandCount = sizeof(kCommands) / sizeof(kCommands[0])
 void Console::setup() {
     // Default sink: USB CDC Serial. The web server replaces this with a
     // buffer-sink before calling processLine(), then restores it.
-    output_ = [](const String& s) {
-        Serial.print(s);
-    };
+    output_ = [](const String& s) { Serial.print(s); };
 
     // Detect USB host (for the welcome banner). On boards with native USB
     // (ESP32-S2/S3), Serial.dtr() goes true when the host opens the port.
@@ -130,14 +125,16 @@ void Console::loop() {
             const String reply = processLine(line);
             if (!reply.isEmpty()) {
                 writeRaw(reply);
-                if (!reply.endsWith("\n")) writeRaw("\n");
+                if (!reply.endsWith("\n"))
+                    writeRaw("\n");
             }
             printPrompt();
         } else if (c == 0x08 || c == 0x7F) {
             // Backspace / DEL
             if (!lineBuffer_.isEmpty()) {
                 lineBuffer_.remove(lineBuffer_.length() - 1);
-                if (echoEnabled_) writeRaw("\b \b");
+                if (echoEnabled_)
+                    writeRaw("\b \b");
             }
         } else if (c == 0x03) {
             // Ctrl+C — stop the current attack
@@ -185,19 +182,58 @@ String Console::processLine(const String& line) {
         printHelp();
         return String();
     }
-    if (cmd == "info")  { printInfo();  return String(); }
-    if (cmd == "status"){ printStatus();return String(); }
-    if (cmd == "attack"){ cmdAttack(args); return String(); }
-    if (cmd == "stop")  { cmdStop(args);   return String(); }
-    if (cmd == "scan")  { cmdScan(args);  return String(); }
-    if (cmd == "record"){ cmdRecord(args);return String(); }
-    if (cmd == "replay"){ cmdReplay(args);return String(); }
-    if (cmd == "set")   { cmdSet(args);   return String(); }
-    if (cmd == "get")   { cmdGet(args);   return String(); }
-    if (cmd == "save")  { cmdSave(args);  return String(); }
-    if (cmd == "history"){ cmdHistory(args); return String(); }
-    if (cmd == "reboot"){ cmdReboot(args); return String(); }
-    if (cmd == "reset") { cmdReset(args); return String(); }
+    if (cmd == "info") {
+        printInfo();
+        return String();
+    }
+    if (cmd == "status") {
+        printStatus();
+        return String();
+    }
+    if (cmd == "attack") {
+        cmdAttack(args);
+        return String();
+    }
+    if (cmd == "stop") {
+        cmdStop(args);
+        return String();
+    }
+    if (cmd == "scan") {
+        cmdScan(args);
+        return String();
+    }
+    if (cmd == "record") {
+        cmdRecord(args);
+        return String();
+    }
+    if (cmd == "replay") {
+        cmdReplay(args);
+        return String();
+    }
+    if (cmd == "set") {
+        cmdSet(args);
+        return String();
+    }
+    if (cmd == "get") {
+        cmdGet(args);
+        return String();
+    }
+    if (cmd == "save") {
+        cmdSave(args);
+        return String();
+    }
+    if (cmd == "history") {
+        cmdHistory(args);
+        return String();
+    }
+    if (cmd == "reboot") {
+        cmdReboot(args);
+        return String();
+    }
+    if (cmd == "reset") {
+        cmdReset(args);
+        return String();
+    }
 
     String out = "Unknown command: ";
     out += cmd;
@@ -215,7 +251,8 @@ void Console::printHelp() {
         out += "  ";
         out += c.name;
         // Column-align
-        for (size_t i = std::strlen(c.name); i < 10; ++i) out += ' ';
+        for (size_t i = std::strlen(c.name); i < 10; ++i)
+            out += ' ';
         out += "- ";
         out += c.help;
         out += '\n';
@@ -232,18 +269,42 @@ void Console::printHelp() {
 
 void Console::printInfo() {
     String out;
-    out += "Device:   ";   out += PHM_NAME;      out += '\n';
-    out += "Version:  ";   out += PHM_VERSION_STRING; out += '\n';
-    out += "Board:    ";   out += phm::hal::g_board.boardName(); out += '\n';
-    out += "Chip:     ";   out += ESP.getChipModel(); out += '\n';
-    out += "CPU:      ";   out += ESP.getCpuFreqMHz(); out += " MHz\n";
-    out += "Heap:     ";   out += ESP.getFreeHeap(); out += " bytes free\n";
-    out += "Min heap: ";   out += ESP.getMinFreeHeap(); out += '\n';
-    out += "Uptime:   ";   out += (millis() - g_state.bootTime) / 1000UL; out += " s\n";
-    out += "Temp:     ";   out += g_state.internalTempC; out += " C\n";
-    out += "Vbat:     ";   out += g_state.vbat_mV; out += " mV\n";
-    out += "AP:       ";   out += (g_state.apActive ? "active" : "off"); out += '\n';
-    out += "WS clis:  ";   out += g_state.webConnected ? 1 : 0; out += '\n';
+    out += "Device:   ";
+    out += PHM_NAME;
+    out += '\n';
+    out += "Version:  ";
+    out += PHM_VERSION_STRING;
+    out += '\n';
+    out += "Board:    ";
+    out += phm::hal::g_board.boardName();
+    out += '\n';
+    out += "Chip:     ";
+    out += ESP.getChipModel();
+    out += '\n';
+    out += "CPU:      ";
+    out += ESP.getCpuFreqMHz();
+    out += " MHz\n";
+    out += "Heap:     ";
+    out += ESP.getFreeHeap();
+    out += " bytes free\n";
+    out += "Min heap: ";
+    out += ESP.getMinFreeHeap();
+    out += '\n';
+    out += "Uptime:   ";
+    out += (millis() - g_state.bootTime) / 1000UL;
+    out += " s\n";
+    out += "Temp:     ";
+    out += g_state.internalTempC;
+    out += " C\n";
+    out += "Vbat:     ";
+    out += g_state.vbat_mV;
+    out += " mV\n";
+    out += "AP:       ";
+    out += (g_state.apActive ? "active" : "off");
+    out += '\n';
+    out += "WS clis:  ";
+    out += g_state.webConnected ? 1 : 0;
+    out += '\n';
     writeRaw(out);
 }
 
@@ -251,17 +312,19 @@ void Console::printStatus() {
     String out;
     out += "State:     ";
     switch (g_state.state) {
-        case phm::State::Booting:   out += "Booting";   break;
-        case phm::State::Idle:      out += "Idle";      break;
-        case phm::State::Running:   out += "Running";   break;
-        case phm::State::Stopping:  out += "Stopping";  break;
-        case phm::State::Error:     out += "Error";     break;
-        case phm::State::DeepSleep: out += "DeepSleep"; break;
+    case phm::State::Booting: out += "Booting"; break;
+    case phm::State::Idle: out += "Idle"; break;
+    case phm::State::Running: out += "Running"; break;
+    case phm::State::Stopping: out += "Stopping"; break;
+    case phm::State::Error: out += "Error"; break;
+    case phm::State::DeepSleep: out += "DeepSleep"; break;
     }
     out += '\n';
     out += "Module:    ";
-    if (g_state.currentModuleId == 0) out += "(none)";
-    else                              out += g_state.currentModuleId;
+    if (g_state.currentModuleId == 0)
+        out += "(none)";
+    else
+        out += g_state.currentModuleId;
     out += '\n';
     if (g_state.lastError[0] != '\0') {
         out += "Last err:  ";
@@ -299,21 +362,20 @@ void Console::cmdAttack(const std::vector<String>& args) {
     // corresponding IModule can pick it up.
     {
         phm::Event ev;
-        ev.type      = phm::EventType::WebCommand;   // treated as "command from any source"
+        ev.type = phm::EventType::WebCommand;  // treated as "command from any source"
         ev.timestamp = millis();
-        ev.sourceId  = MODULE_ID;
-        const String payload = String("attack ") + target +
-            (args.size() >= 3 ? (String(" ") + args[2]) : String());
-        ev.dataLen  = payload.length();
-        ev.data     = new uint8_t[ev.dataLen + 1];
+        ev.sourceId = MODULE_ID;
+        const String payload = String("attack ") + target + (args.size() >= 3 ? (String(" ") + args[2]) : String());
+        ev.dataLen = payload.length();
+        ev.data = new uint8_t[ev.dataLen + 1];
         std::memcpy(ev.data, payload.c_str(), ev.dataLen + 1);
         if (!g_events.post(ev)) {
             writeLine("Warning: event queue full, attack may not start");
         }
     }  // ev destructor frees the buffer
 
-    g_state.state            = phm::State::Running;
-    g_state.currentModuleId  = 0;  // real module will overwrite this
+    g_state.state = phm::State::Running;
+    g_state.currentModuleId = 0;  // real module will overwrite this
     out += "Running. Send 'attack stop' to abort.\n";
     writeRaw(out);
 }
@@ -322,20 +384,20 @@ void Console::cmdStop(const std::vector<String>& /*args*/) {
     g_state.state = phm::State::Stopping;
     {
         phm::Event ev;
-        ev.type      = phm::EventType::WebCommand;
+        ev.type = phm::EventType::WebCommand;
         ev.timestamp = millis();
-        ev.sourceId  = MODULE_ID;
+        ev.sourceId = MODULE_ID;
         const char* payload = "attack stop";
-        ev.dataLen   = std::strlen(payload);
-        ev.data      = new uint8_t[ev.dataLen + 1];
+        ev.dataLen = std::strlen(payload);
+        ev.data = new uint8_t[ev.dataLen + 1];
         std::memcpy(ev.data, payload, ev.dataLen + 1);
         if (!g_events.post(ev)) {
             writeLine("Warning: event queue full");
         }
     }  // ev destructor frees the buffer
 
-    g_state.state            = phm::State::Idle;
-    g_state.currentModuleId  = 0;
+    g_state.state = phm::State::Idle;
+    g_state.currentModuleId = 0;
     writeLine("Stopped.");
 }
 
@@ -367,7 +429,11 @@ void Console::cmdRecord(const std::vector<String>& args) {
     }
     const uint32_t dur = (args.size() >= 3) ? static_cast<uint32_t>(std::atol(args[2].c_str())) : 1000UL;
     String out;
-    out += "Recording at "; out += mhz; out += " MHz for "; out += dur; out += " ms\n";
+    out += "Recording at ";
+    out += mhz;
+    out += " MHz for ";
+    out += dur;
+    out += " ms\n";
     out += "(CC1101 driver will perform the actual capture in M1)\n";
     writeRaw(out);
 }
@@ -383,7 +449,9 @@ void Console::cmdReplay(const std::vector<String>& args) {
         return;
     }
     String out;
-    out += "Replaying last recording at "; out += mhz; out += " MHz\n";
+    out += "Replaying last recording at ";
+    out += mhz;
+    out += " MHz\n";
     out += "(CC1101 driver will perform the actual transmission in M1)\n";
     writeRaw(out);
 }
@@ -408,7 +476,11 @@ void Console::cmdSet(const std::vector<String>& args) {
         g_storage.setString(key, val);
     }
     g_storage.commit();
-    String out = "Set "; out += key; out += " = "; out += val; out += "\n";
+    String out = "Set ";
+    out += key;
+    out += " = ";
+    out += val;
+    out += "\n";
     writeRaw(out);
 }
 
@@ -422,7 +494,10 @@ void Console::cmdGet(const std::vector<String>& args) {
     // Try each type. String is the most common, so try it first.
     String s;
     if (g_storage.getString(key, s)) {
-        String out = key; out += " = "; out += s; out += "\n";
+        String out = key;
+        out += " = ";
+        out += s;
+        out += "\n";
         writeRaw(out);
         return;
     }
@@ -435,7 +510,10 @@ void Console::cmdGet(const std::vector<String>& args) {
     }
     bool bv = false;
     if (g_storage.getBool(key, bv)) {
-        String out = key; out += " = "; out += (bv ? "true" : "false"); out += "\n";
+        String out = key;
+        out += " = ";
+        out += (bv ? "true" : "false");
+        out += "\n";
         writeRaw(out);
         return;
     }
@@ -495,7 +573,7 @@ std::vector<String> Console::tokenize(const String& line) const {
     std::vector<String> out;
     String cur;
     bool inQuotes = false;
-    char quoteCh  = 0;
+    char quoteCh = 0;
     for (size_t i = 0; i < line.length(); ++i) {
         const char c = line.charAt(i);
         if (inQuotes) {
@@ -515,7 +593,7 @@ std::vector<String> Console::tokenize(const String& line) const {
                 }
             } else if (c == '"' || c == '\'') {
                 inQuotes = true;
-                quoteCh  = c;
+                quoteCh = c;
             } else {
                 cur += c;
             }
@@ -528,8 +606,10 @@ std::vector<String> Console::tokenize(const String& line) const {
 }
 
 void Console::pushHistory(const String& line) {
-    if (line.isEmpty()) return;
-    if (!history_.empty() && history_.back() == line) return;
+    if (line.isEmpty())
+        return;
+    if (!history_.empty() && history_.back() == line)
+        return;
     history_.push_back(line);
     if (history_.size() > kMaxHistory) {
         history_.erase(history_.begin());

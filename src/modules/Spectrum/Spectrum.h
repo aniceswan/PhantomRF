@@ -17,14 +17,13 @@
  */
 #pragma once
 
+#include "core/Module.h"
+
+#include <vector>
+
 #include <Arduino.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include <stdint.h>
-#include <vector>
-
-#include "core/Module.h"
 
 // forward decl removed: use FreeRTOS TaskHandle_t via <freertos/task.h>
 // typedef removed: use FreeRTOS TaskHandle_t via <freertos/task.h>
@@ -41,10 +40,9 @@ namespace phm::modules {
  */
 class Spectrum : public ::phm::IModule {
 public:
-    static constexpr uint8_t  MODULE_ID   = 0x05;
+    static constexpr uint8_t MODULE_ID = 0x05;
     static constexpr const char* MODULE_NAME = "spectrum";
-    static constexpr const char* MODULE_DESC =
-        "Live RSSI spectrum analyzer (2.4 GHz and sub-GHz)";
+    static constexpr const char* MODULE_DESC = "Live RSSI spectrum analyzer (2.4 GHz and sub-GHz)";
 
     uint8_t id() const override { return MODULE_ID; }
     const char* name() const override { return MODULE_NAME; }
@@ -69,11 +67,11 @@ public:
 
     /// One RSSI sample
     struct ScanResult {
-        char     band[8];       ///< "2.4ghz" or "subghz"
-        uint8_t  channel;       ///< 0..125 for 2.4 GHz, 0..255 for sub-GHz
-        float    freqMhz;       ///< Centre frequency, MHz
-        int8_t   rssi;          ///< dBm
-        uint32_t timestamp;     ///< millis() at sample time
+        char band[8];        ///< "2.4ghz" or "subghz"
+        uint8_t channel;     ///< 0..125 for 2.4 GHz, 0..255 for sub-GHz
+        float freqMhz;       ///< Centre frequency, MHz
+        int8_t rssi;         ///< dBm
+        uint32_t timestamp;  ///< millis() at sample time
     };
 
     /// Read-only access to the most recent full sweep's results
@@ -105,11 +103,11 @@ private:
     static void taskEntry(void* arg);
 
     // ---- State -----------------------------------------------------------
-    bool         running_      = false;  ///< Worker loop guard
-    char         currentBand_[8] = "";    ///< "2.4ghz" or "subghz"
-    TaskHandle_t task_         = nullptr;
+    bool running_ = false;      ///< Worker loop guard
+    char currentBand_[8] = "";  ///< "2.4ghz" or "subghz"
+    TaskHandle_t task_ = nullptr;
 
-    std::vector<ScanResult> latest_;   ///< Most recent completed sweep
+    std::vector<ScanResult> latest_;  ///< Most recent completed sweep
 };
 
 extern Spectrum g_spectrum;

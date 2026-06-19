@@ -33,37 +33,37 @@ namespace phm::hal {
  */
 enum class PinRole : uint8_t {
     // ---- nRF24 (up to 5 modules on shared HSPI) -------------------------
-    Nrf24Ce0  = 0,  ///< Chip Enable, nRF24 module 0
+    Nrf24Ce0 = 0,   ///< Chip Enable, nRF24 module 0
     Nrf24Csn0 = 1,  ///< Chip Select (active low), nRF24 module 0
-    Nrf24Ce1  = 2,
+    Nrf24Ce1 = 2,
     Nrf24Csn1 = 3,
-    Nrf24Ce2  = 4,
+    Nrf24Ce2 = 4,
     Nrf24Csn2 = 5,
-    Nrf24Ce3  = 6,
+    Nrf24Ce3 = 6,
     Nrf24Csn3 = 7,
-    Nrf24Ce4  = 8,
+    Nrf24Ce4 = 8,
     Nrf24Csn4 = 9,
-    Nrf24Sck  = 10, ///< SPI clock (shared)
-    Nrf24Miso = 11, ///< SPI MISO (shared)
-    Nrf24Mosi = 12, ///< SPI MOSI (shared)
+    Nrf24Sck = 10,   ///< SPI clock (shared)
+    Nrf24Miso = 11,  ///< SPI MISO (shared)
+    Nrf24Mosi = 12,  ///< SPI MOSI (shared)
 
     // ---- CC1101 (1-2 modules on VSPI) -----------------------------------
-    Cc1101Sck  = 13,
+    Cc1101Sck = 13,
     Cc1101Miso = 14,
     Cc1101Mosi = 15,
     Cc1101Csn0 = 16,
-    Cc1101Gdo0 = 17, ///< General Digital Output 0 (often used as IRQ)
+    Cc1101Gdo0 = 17,  ///< General Digital Output 0 (often used as IRQ)
     Cc1101Gdo2 = 18,
-    Cc1101Csn1 = 19, ///< Second CC1101 (M1)
+    Cc1101Csn1 = 19,  ///< Second CC1101 (M1)
 
     // ---- OLED (I2C) ------------------------------------------------------
     OledSda = 20,
     OledScl = 21,
 
     // ---- User input ------------------------------------------------------
-    ButtonOk   = 22, ///< Centre / select button
-    ButtonNext = 23, ///< Move forward in menus
-    ButtonPrev = 24, ///< Move backward in menus
+    ButtonOk = 22,    ///< Centre / select button
+    ButtonNext = 23,  ///< Move forward in menus
+    ButtonPrev = 24,  ///< Move backward in menus
 
     // ---- Status LED (RGB, PWM-capable) ----------------------------------
     LedR = 25,

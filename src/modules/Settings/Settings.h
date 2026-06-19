@@ -11,11 +11,10 @@
  */
 #pragma once
 
-#include <stdint.h>
+#include "core/Module.h"
 
 #include <Arduino.h>
-
-#include "core/Module.h"
+#include <stdint.h>
 
 namespace phm::modules {
 
@@ -29,10 +28,9 @@ namespace phm::modules {
  */
 class SettingsModule : public ::phm::IModule {
 public:
-    static constexpr uint8_t  MODULE_ID   = 0xF0;
+    static constexpr uint8_t MODULE_ID = 0xF0;
     static constexpr const char* MODULE_NAME = "settings";
-    static constexpr const char* MODULE_DESC =
-        "Persistent settings (NVS) and factory reset";
+    static constexpr const char* MODULE_DESC = "Persistent settings (NVS) and factory reset";
 
     uint8_t id() const override { return MODULE_ID; }
     const char* name() const override { return MODULE_NAME; }

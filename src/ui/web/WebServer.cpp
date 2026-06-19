@@ -30,32 +30,32 @@
  */
 #include "ui/web/WebServer.h"
 
+#include "core/EventBus.h"
+#include "core/State.h"
+#include "hal/Board.h"
+#include "hal/Storage.h"
+#include "modules/BleAttack/BleAttack.h"
+#include "modules/Cc1101Jammer/Cc1101Jammer.h"
+#include "modules/Nrf24Jammer/Nrf24Jammer.h"
+#include "modules/Spectrum/Spectrum.h"
+#include "modules/WifiAttack/WifiAttack.h"
+#include "ui/cli/Console.h"
+#include "utils/Logger.h"
+
 #include <Arduino.h>
 #include <LittleFS.h>
 #include <Update.h>
 
-#include "core/State.h"
-#include "core/EventBus.h"
-#include "hal/Storage.h"
-#include "hal/Board.h"
-#include "modules/Nrf24Jammer/Nrf24Jammer.h"
-#include "modules/Cc1101Jammer/Cc1101Jammer.h"
-#include "modules/WifiAttack/WifiAttack.h"
-#include "modules/BleAttack/BleAttack.h"
-#include "modules/Spectrum/Spectrum.h"
-#include "ui/cli/Console.h"
-#include "utils/Logger.h"
-
-using phm::hal::g_storage;
 using phm::hal::g_board;
-using phm::modules::Nrf24Jammer;
-using phm::modules::g_nrf24Jammer;
+using phm::hal::g_storage;
 using phm::modules::Cc1101Jammer;
-using phm::modules::g_cc1101Jammer;
-using phm::modules::WifiAttack;
-using phm::modules::g_wifiAttack;
 using phm::modules::g_bleAttack;
+using phm::modules::g_cc1101Jammer;
+using phm::modules::g_nrf24Jammer;
 using phm::modules::g_spectrum;
+using phm::modules::g_wifiAttack;
+using phm::modules::Nrf24Jammer;
+using phm::modules::WifiAttack;
 
 namespace phm::ui {
 
@@ -87,8 +87,7 @@ static void sendJsonRaw(AsyncWebServerRequest* req, const char* body) {
 }
 
 static void send404(AsyncWebServerRequest* req, const char* msg) {
-    AsyncWebServerResponse* r = req->beginResponse(404, "application/json",
-        String("{\"error\":\"") + msg + "\"}");
+    AsyncWebServerResponse* r = req->beginResponse(404, "application/json", String("{\"error\":\"") + msg + "\"}");
     r->addHeader("Cache-Control", "no-store");
     req->send(r);
 }
@@ -120,8 +119,8 @@ void WebServer::setup() {
         if (LittleFS.exists("/littlefs/web/index.html")) {
             req->send(LittleFS, "/littlefs/web/index.html", "text/html");
         } else {
-            AsyncWebServerResponse* r = req->beginResponse(200, "text/html",
-                "<h1>PhantomRF</h1><p>Web assets not flashed. Use the web flasher.</p>");
+            AsyncWebServerResponse* r = req->beginResponse(
+                200, "text/html", "<h1>PhantomRF</h1><p>Web assets not flashed. Use the web flasher.</p>");
             r->addHeader("Cache-Control", "no-store");
             req->send(r);
         }
@@ -162,9 +161,8 @@ void WebServer::setup() {
     });
 
     // POST /api/attack/start
-    server_.on("/api/attack/start", HTTP_POST,
-        [](AsyncWebServerRequest* req) { sendJsonRaw(req, "{\"ok\":true}"); },
-        NULL,
+    server_.on(
+        "/api/attack/start", HTTP_POST, [](AsyncWebServerRequest* req) { sendJsonRaw(req, "{\"ok\":true}"); }, NULL,
         [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
             // Body handler: parse JSON, dispatch to module
             String body = String((const char*)data, len);
@@ -183,9 +181,7 @@ void WebServer::setup() {
             if (String(module) == "bluetooth") {
                 Nrf24Jammer::AttackConfig cfg{};
                 cfg.target = Nrf24Jammer::Target::Bluetooth;
-                cfg.method = (String(method) == "random") ?
-                    Nrf24Jammer::Method::Random :
-                    Nrf24Jammer::Method::List;
+                cfg.method = (String(method) == "random") ? Nrf24Jammer::Method::Random : Nrf24Jammer::Method::List;
                 ok = g_nrf24Jammer.startAttack(cfg);
             } else if (String(module) == "ble") {
                 Nrf24Jammer::AttackConfig cfg{};
@@ -237,20 +233,22 @@ void WebServer::setup() {
     server_.on("/api/settings", HTTP_GET, [](AsyncWebServerRequest* req) {
         JsonDocument doc;
         String apSsid;
-        if (g_storage.getString("ap.ssid", apSsid)) doc["ap"]["ssid"] = apSsid;
+        if (g_storage.getString("ap.ssid", apSsid))
+            doc["ap"]["ssid"] = apSsid;
         String apPw;
-        if (g_storage.getString("ap.password", apPw)) doc["ap"]["password"] = apPw;
+        if (g_storage.getString("ap.password", apPw))
+            doc["ap"]["password"] = apPw;
         int32_t nrf24Count = 0;
-        if (g_storage.getInt("nrf24.count", nrf24Count)) doc["nrf24"]["count"] = nrf24Count;
+        if (g_storage.getInt("nrf24.count", nrf24Count))
+            doc["nrf24"]["count"] = nrf24Count;
         doc["version"] = PHM_VERSION_STRING;
         doc["board"] = g_board.boardName();
         sendJsonDoc(req, doc);
     });
 
     // POST /api/settings
-    server_.on("/api/settings", HTTP_POST,
-        [](AsyncWebServerRequest* req) { sendJsonRaw(req, "{\"ok\":true}"); },
-        NULL,
+    server_.on(
+        "/api/settings", HTTP_POST, [](AsyncWebServerRequest* req) { sendJsonRaw(req, "{\"ok\":true}"); }, NULL,
         [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
             String body = String((const char*)data, len);
             JsonDocument doc;
@@ -288,9 +286,8 @@ void WebServer::setup() {
     });
 
     // POST /api/cli
-    server_.on("/api/cli", HTTP_POST,
-        [](AsyncWebServerRequest* req) { /* response set in body handler */ },
-        NULL,
+    server_.on(
+        "/api/cli", HTTP_POST, [](AsyncWebServerRequest* req) { /* response set in body handler */ }, NULL,
         [](AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t, size_t) {
             String body = String((const char*)data, len);
             JsonDocument doc;
@@ -312,7 +309,8 @@ void WebServer::setup() {
     });
 
     // POST /api/ota (multipart)
-    server_.on("/api/ota", HTTP_POST,
+    server_.on(
+        "/api/ota", HTTP_POST,
         [](AsyncWebServerRequest* req) {
             if (Update.end(true)) {
                 sendJsonRaw(req, "{\"ok\":true}");
@@ -322,8 +320,7 @@ void WebServer::setup() {
                 sendJsonRaw(req, "{\"error\":\"ota failed\"}");
             }
         },
-        [](AsyncWebServerRequest* req, const String& filename, size_t index,
-           uint8_t* data, size_t len, bool final) {
+        [](AsyncWebServerRequest* req, const String& filename, size_t index, uint8_t* data, size_t len, bool final) {
             if (index == 0) {
                 if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
                     Update.printError(Serial);
@@ -352,7 +349,8 @@ void WebServer::setup() {
 }
 
 void WebServer::loop() {
-    if (dnsStarted_) dns_.processNextRequest();
+    if (dnsStarted_)
+        dns_.processNextRequest();
 
     // Periodic push to WebSocket clients (DESIGN §11.2)
     const uint32_t now = millis();
@@ -391,16 +389,21 @@ void WebServer::loop() {
 
 void WebServer::teardown() {
     server_.end();
-    if (dnsStarted_) dns_.stop();
+    if (dnsStarted_)
+        dns_.stop();
 }
 
 void WebServer::startAp(const char* ssid, const char* password) {
     String s = ssid;
     String p = password;
-    if (s.isEmpty()) g_storage.getString("ap.ssid", s);
-    if (p.isEmpty()) g_storage.getString("ap.password", p);
-    if (s.isEmpty()) s = "PhantomRF";
-    if (p.isEmpty()) p = "phantom1234";
+    if (s.isEmpty())
+        g_storage.getString("ap.ssid", s);
+    if (p.isEmpty())
+        g_storage.getString("ap.password", p);
+    if (s.isEmpty())
+        s = "PhantomRF";
+    if (p.isEmpty())
+        p = "phantom1234";
 
     WiFi.mode(WIFI_AP);
     delay(100);
@@ -431,55 +434,51 @@ bool WebServer::isApActive() const {
 // WebSocket setup
 // ---------------------------------------------------------------------------
 void WebServer::setupWebSocket() {
-    ws_.onEvent([this](AsyncWebSocket* server, AsyncWebSocketClient* client,
-                       AwsEventType type, void* arg, uint8_t* data, size_t len) {
-        this->onWsEvent(server, client, type, arg, data, len);
-    });
+    ws_.onEvent([this](AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg,
+                       uint8_t* data, size_t len) { this->onWsEvent(server, client, type, arg, data, len); });
     server_.addHandler(&ws_);
     LOGI(kTag, "WebSocket registered at /ws");
 }
 
-void WebServer::onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
-                          AwsEventType type, void* arg, uint8_t* data, size_t len) {
+void WebServer::onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg,
+                          uint8_t* data, size_t len) {
     (void)server;
     switch (type) {
-        case WS_EVT_CONNECT: {
-            LOGI(kTag, "WS client #%u connected from %s", client->id(),
-                 client->remoteIP().toString().c_str());
-            // Send a hello frame so the client knows the protocol version
-            StaticJsonDocument<128> hello;
-            hello["type"] = "hello";
-            hello["proto"] = "phantomrf-ws-v1";
-            hello["serverTime"] = millis();
-            hello["board"] = g_board.boardName();
-            String body;
-            serializeJson(hello, body);
-            client->text(body);
-            // Send an immediate status snapshot
-            broadcastStatus();
-            break;
-        }
-        case WS_EVT_DISCONNECT: {
-            LOGI(kTag, "WS client #%u disconnected", client->id());
-            break;
-        }
-        case WS_EVT_DATA: {
-            // Client -> server command (optional, M0 keeps this simple)
-            AwsFrameInfo* info = static_cast<AwsFrameInfo*>(arg);
-            if (info->final && info->index == 0 && info->len == len && len < 256) {
-                char msg[256] = {0};
-                memcpy(msg, data, len);
-                // Only "ping" command is recognised in M0
-                if (strcmp(msg, "ping") == 0) {
-                    client->text("{\"type\":\"pong\"}");
-                }
+    case WS_EVT_CONNECT: {
+        LOGI(kTag, "WS client #%u connected from %s", client->id(), client->remoteIP().toString().c_str());
+        // Send a hello frame so the client knows the protocol version
+        StaticJsonDocument<128> hello;
+        hello["type"] = "hello";
+        hello["proto"] = "phantomrf-ws-v1";
+        hello["serverTime"] = millis();
+        hello["board"] = g_board.boardName();
+        String body;
+        serializeJson(hello, body);
+        client->text(body);
+        // Send an immediate status snapshot
+        broadcastStatus();
+        break;
+    }
+    case WS_EVT_DISCONNECT: {
+        LOGI(kTag, "WS client #%u disconnected", client->id());
+        break;
+    }
+    case WS_EVT_DATA: {
+        // Client -> server command (optional, M0 keeps this simple)
+        AwsFrameInfo* info = static_cast<AwsFrameInfo*>(arg);
+        if (info->final && info->index == 0 && info->len == len && len < 256) {
+            char msg[256] = {0};
+            memcpy(msg, data, len);
+            // Only "ping" command is recognised in M0
+            if (strcmp(msg, "ping") == 0) {
+                client->text("{\"type\":\"pong\"}");
             }
-            break;
         }
-        case WS_EVT_PING:
-        case WS_EVT_PONG:
-        default:
-            break;
+        break;
+    }
+    case WS_EVT_PING:
+    case WS_EVT_PONG:
+    default: break;
     }
 }
 
@@ -491,18 +490,20 @@ size_t WebServer::wsClientCount() const {
 // Broadcast functions
 // ---------------------------------------------------------------------------
 void WebServer::broadcast(const JsonDocument& doc) {
-    if (ws_.count() == 0) return;
+    if (ws_.count() == 0)
+        return;
     String body;
     serializeJson(doc, body);
     ws_.textAll(body);
 }
 
 void WebServer::broadcastSpectrum(const char* band, const int8_t* rssi, size_t len) {
-    if (ws_.count() == 0 || rssi == nullptr || len == 0) return;
+    if (ws_.count() == 0 || rssi == nullptr || len == 0)
+        return;
     DynamicJsonDocument doc(2048);
     doc["type"] = "spectrum";
     doc["band"] = band;
-    doc["ts"]   = millis();
+    doc["ts"] = millis();
     JsonArray arr = doc.createNestedArray("rssi");
     for (size_t i = 0; i < len; ++i) {
         arr.add(rssi[i]);
@@ -513,21 +514,22 @@ void WebServer::broadcastSpectrum(const char* band, const int8_t* rssi, size_t l
 }
 
 void WebServer::broadcastStatus() {
-    if (ws_.count() == 0) return;
+    if (ws_.count() == 0)
+        return;
     DynamicJsonDocument doc(512);
-    doc["type"]            = "status";
-    doc["ts"]              = millis();
-    doc["seq"]             = ++seqCounter_;
-    doc["state"]           = static_cast<int>(phm::g_state.state);
-    doc["freeHeap"]        = ESP.getFreeHeap();
-    doc["uptime"]          = millis();
-    doc["vbat_mV"]         = phm::g_state.vbat_mV;
-    doc["tempC"]           = phm::g_state.internalTempC;
-    doc["apActive"]        = phm::g_state.apActive;
+    doc["type"] = "status";
+    doc["ts"] = millis();
+    doc["seq"] = ++seqCounter_;
+    doc["state"] = static_cast<int>(phm::g_state.state);
+    doc["freeHeap"] = ESP.getFreeHeap();
+    doc["uptime"] = millis();
+    doc["vbat_mV"] = phm::g_state.vbat_mV;
+    doc["tempC"] = phm::g_state.internalTempC;
+    doc["apActive"] = phm::g_state.apActive;
     doc["currentModuleId"] = phm::g_state.currentModuleId;
-    doc["usbConnected"]    = phm::g_state.usbConnected;
-    doc["version"]         = PHM_VERSION_STRING;
-    doc["board"]           = g_board.boardName();
+    doc["usbConnected"] = phm::g_state.usbConnected;
+    doc["version"] = PHM_VERSION_STRING;
+    doc["board"] = g_board.boardName();
     String body;
     serializeJson(doc, body);
     ws_.textAll(body);
@@ -535,12 +537,13 @@ void WebServer::broadcastStatus() {
 
 void WebServer::broadcastLog(const char* level, const char* msg) {
     LOGI(level, "%s", msg);
-    if (ws_.count() == 0) return;
+    if (ws_.count() == 0)
+        return;
     DynamicJsonDocument doc(384);
-    doc["type"]  = "log";
-    doc["ts"]    = millis();
+    doc["type"] = "log";
+    doc["ts"] = millis();
     doc["level"] = level ? level : "info";
-    doc["msg"]   = msg ? msg : "";
+    doc["msg"] = msg ? msg : "";
     String body;
     serializeJson(doc, body);
     ws_.textAll(body);
@@ -548,11 +551,12 @@ void WebServer::broadcastLog(const char* level, const char* msg) {
 
 void WebServer::broadcastAttackState(const char* state, const char* module, const char* error) {
     DynamicJsonDocument doc(256);
-    doc["type"]   = "attack_state";
-    doc["ts"]     = millis();
-    doc["state"]  = state ? state : "unknown";
+    doc["type"] = "attack_state";
+    doc["ts"] = millis();
+    doc["state"] = state ? state : "unknown";
     doc["module"] = module ? module : "";
-    if (error) doc["error"] = error;
+    if (error)
+        doc["error"] = error;
     broadcast(doc);
 }
 

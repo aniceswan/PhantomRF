@@ -26,19 +26,16 @@
  */
 #pragma once
 
-#include <Arduino.h>
-#include <stddef.h>
-#include <stdint.h>
-
-#include <stddef.h>
-#include <stdint.h>
+#include "core/Module.h"
+#include "hal/Board.h"
 
 #include <functional>
 #include <string>
 #include <vector>
 
-#include "core/Module.h"
-#include "hal/Board.h"
+#include <Arduino.h>
+#include <stddef.h>
+#include <stdint.h>
 
 namespace phm::ui {
 
@@ -54,7 +51,7 @@ public:
     static constexpr uint8_t MODULE_ID = 0xE2;
 
     /// Maximum characters we keep in the input line buffer
-    static constexpr size_t kMaxLine    = 256;
+    static constexpr size_t kMaxLine = 256;
     /// Number of lines kept in the recall history
     static constexpr size_t kMaxHistory = 32;
 
@@ -63,11 +60,11 @@ public:
     using OutputFn = std::function<void(const String&)>;
 
     // ---- IModule ---------------------------------------------------------
-    const char* name()        const override { return "Console"; }
+    const char* name() const override { return "Console"; }
     const char* description() const override { return "USB CDC + web terminal"; }
-    uint8_t     id()          const override { return MODULE_ID; }
-    void setup()    override;
-    void loop()     override;
+    uint8_t id() const override { return MODULE_ID; }
+    void setup() override;
+    void loop() override;
 
     // ---- Public API ------------------------------------------------------
 
@@ -114,11 +111,11 @@ private:
     String completeCommand(const String& prefix) const;
 
     // ---- State -----------------------------------------------------------
-    OutputFn output_;                                 ///< Current sink
-    String   lineBuffer_;                             ///< In-progress line (USB CDC)
-    std::vector<String> history_;                     ///< Last N lines
-    uint32_t lastCharMs_  = 0;                        ///< millis() of last rx char
-    bool     echoEnabled_ = true;                     ///< Local echo (USB CDC)
+    OutputFn output_;              ///< Current sink
+    String lineBuffer_;            ///< In-progress line (USB CDC)
+    std::vector<String> history_;  ///< Last N lines
+    uint32_t lastCharMs_ = 0;      ///< millis() of last rx char
+    bool echoEnabled_ = true;      ///< Local echo (USB CDC)
 };
 
 /// Singleton instance, defined in Console.cpp

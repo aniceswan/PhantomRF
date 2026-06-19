@@ -19,9 +19,9 @@
  */
 #pragma once
 
-#include <stdint.h>
-
 #include "hal/Board.h"
+
+#include <stdint.h>
 
 // `GButton` (from the `GyverButton` library) is a third-party class
 // that lives in the global namespace. Forward-declare it at file scope
@@ -38,7 +38,7 @@ namespace phm::hal {
  * the menu. In 1-button mode, `Ok` is overloaded (short = next, long = select).
  */
 enum class ButtonId : uint8_t {
-    Ok   = 0,
+    Ok = 0,
     Next = 1,
     Prev = 2,
 };
@@ -77,7 +77,7 @@ public:
 private:
     // The pointers are typed with the global `GButton` (from the
     // AlexGyver GyverButton debounce library).
-    GButton* btnOk_   = nullptr;  ///< Owned by this object
+    GButton* btnOk_ = nullptr;  ///< Owned by this object
     GButton* btnNext_ = nullptr;
     GButton* btnPrev_ = nullptr;
 

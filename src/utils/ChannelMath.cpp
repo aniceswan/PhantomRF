@@ -19,7 +19,5 @@
 namespace phm::util {
 
 // Reserved for future non-constexpr helpers (e.g. caching tables).
-namespace {
-
-}  // namespace
+namespace {}  // namespace
 }  // namespace phm::util

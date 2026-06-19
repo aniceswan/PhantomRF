@@ -17,13 +17,12 @@
  */
 #pragma once
 
-#include <stddef.h>
-#include <stdint.h>
-
 #include <vector>
 
 #include <Arduino.h>
 #include <Preferences.h>
+#include <stddef.h>
+#include <stdint.h>
 
 namespace phm::hal {
 
@@ -87,7 +86,7 @@ public:
 
 private:
     Preferences prefs_;
-    bool        fsMounted_ = false;
+    bool fsMounted_ = false;
 };
 
 /// Singleton instance, defined in Storage.cpp
@@ -104,19 +103,20 @@ extern Storage g_storage;
  * Capacity is rounded up to a power of two so the index wrap can be a
  * single bitmask instead of a modulo.
  */
-template <typename T>
-class RingBuffer {
+template<typename T> class RingBuffer {
 public:
     /// Allocate a ring buffer with `capacity` elements. Returns false on
     /// allocation failure (out of PSRAM/heap).
     bool begin(size_t capacity) {
         capacity_ = 1;
-        while (capacity_ < capacity) capacity_ <<= 1;
-        mask_     = capacity_ - 1;
-        buf_      = static_cast<T*>(g_storage.psramAlloc(capacity_ * sizeof(T)));
-        if (!buf_) return false;
-        head_     = 0;
-        tail_     = 0;
+        while (capacity_ < capacity)
+            capacity_ <<= 1;
+        mask_ = capacity_ - 1;
+        buf_ = static_cast<T*>(g_storage.psramAlloc(capacity_ * sizeof(T)));
+        if (!buf_)
+            return false;
+        head_ = 0;
+        tail_ = 0;
         return true;
     }
 
@@ -126,14 +126,12 @@ public:
             buf_ = nullptr;
         }
         capacity_ = 0;
-        head_     = 0;
-        tail_     = 0;
+        head_ = 0;
+        tail_ = 0;
     }
 
     /// Number of elements currently stored
-    size_t size() const {
-        return head_ - tail_;
-    }
+    size_t size() const { return head_ - tail_; }
 
     /// Maximum capacity
     size_t capacity() const { return capacity_; }
@@ -150,7 +148,8 @@ public:
     /// Push one element. Returns false if full (caller can choose to
     /// overwrite — see `pushOver()` for that variant).
     bool push(const T& v) {
-        if (full()) return false;
+        if (full())
+            return false;
         buf_[head_ & mask_] = v;
         ++head_;
         return true;
@@ -158,14 +157,16 @@ public:
 
     /// Push one element, overwriting the oldest if full.
     void pushOver(const T& v) {
-        if (full()) ++tail_;
+        if (full())
+            ++tail_;
         buf_[head_ & mask_] = v;
         ++head_;
     }
 
     /// Pop one element. Returns false if empty.
     bool pop(T& out) {
-        if (empty()) return false;
+        if (empty())
+            return false;
         out = buf_[tail_ & mask_];
         ++tail_;
         return true;
@@ -173,7 +174,8 @@ public:
 
     /// Peek at the head (most recently pushed) without removing
     bool peek(T& out) const {
-        if (empty()) return false;
+        if (empty())
+            return false;
         out = buf_[(head_ - 1) & mask_];
         return true;
     }
@@ -182,12 +184,11 @@ public:
     void clear() { head_ = tail_ = 0; }
 
 private:
-    T*     buf_      = nullptr;
+    T* buf_ = nullptr;
     size_t capacity_ = 0;
-    size_t mask_     = 0;
-    size_t head_     = 0;  /// monotonically increasing write index
-    size_t tail_     = 0;  /// monotonically increasing read index
+    size_t mask_ = 0;
+    size_t head_ = 0;  /// monotonically increasing write index
+    size_t tail_ = 0;  /// monotonically increasing read index
 };
 
 }  // namespace phm::hal
-

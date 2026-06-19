@@ -16,16 +16,16 @@
  */
 #pragma once
 
-#include <stdint.h>
-
 #include "core/Config.h"
 
+#include <stdint.h>
+
 #ifdef ESP32
-    // Pull in the real FreeRTOS types when compiling for ESP32.
-    // The native-test build (PHM_NATIVE_TEST) does not have FreeRTOS,
-    // so the .cpp file provides its own minimal shim.
-    #include <freertos/FreeRTOS.h>
-    #include <freertos/queue.h>
+// Pull in the real FreeRTOS types when compiling for ESP32.
+// The native-test build (PHM_NATIVE_TEST) does not have FreeRTOS,
+// so the .cpp file provides its own minimal shim.
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 #endif
 
 namespace phm {
@@ -37,18 +37,18 @@ namespace phm {
  * stable once assigned — never reorder or remove entries, only append.
  */
 enum class EventType : uint8_t {
-    AttackStarted   = 0,  ///< A module began an attack
-    AttackStopped   = 1,  ///< A module finished an attack cleanly
-    AttackFailed    = 2,  ///< A module could not start the attack
-    AttackProgress  = 3,  ///< Periodic attack progress update
-    SpectrumData    = 4,  ///< RSSI sample for one or more channels
-    LogMessage      = 5,  ///< A log entry to be forwarded to web/UI
-    SystemError     = 6,  ///< A non-fatal error
-    ButtonPress     = 7,  ///< A button was pressed (data = ButtonId)
-    WebCommand      = 8,  ///< A command arrived via the web UI
-    BleCommand      = 9,  ///< A command arrived via BLE Serial
-    UsbCommand      = 10, ///< A command arrived via USB CDC
-    SettingChanged  = 11, ///< A persistent setting was modified
+    AttackStarted = 0,    ///< A module began an attack
+    AttackStopped = 1,    ///< A module finished an attack cleanly
+    AttackFailed = 2,     ///< A module could not start the attack
+    AttackProgress = 3,   ///< Periodic attack progress update
+    SpectrumData = 4,     ///< RSSI sample for one or more channels
+    LogMessage = 5,       ///< A log entry to be forwarded to web/UI
+    SystemError = 6,      ///< A non-fatal error
+    ButtonPress = 7,      ///< A button was pressed (data = ButtonId)
+    WebCommand = 8,       ///< A command arrived via the web UI
+    BleCommand = 9,       ///< A command arrived via BLE Serial
+    UsbCommand = 10,      ///< A command arrived via USB CDC
+    SettingChanged = 11,  ///< A persistent setting was modified
 };
 
 /**
@@ -59,18 +59,20 @@ enum class EventType : uint8_t {
  * Event (which frees the data buffer).
  */
 struct Event {
-    EventType   type;       ///< What happened
-    uint32_t    timestamp;  ///< millis() at post() time
-    uint8_t     sourceId;   ///< IModule::id() of the sender
-    uint16_t    dataLen;    ///< Number of bytes in `data` (may be 0)
-    uint8_t*    data;       ///< Owned by the Event; deleted by `delete event`
+    EventType type;      ///< What happened
+    uint32_t timestamp;  ///< millis() at post() time
+    uint8_t sourceId;    ///< IModule::id() of the sender
+    uint16_t dataLen;    ///< Number of bytes in `data` (may be 0)
+    uint8_t* data;       ///< Owned by the Event; deleted by `delete event`
 
     /// Default ctor leaves fields zero-initialised
-    Event() : type(EventType::SystemError), timestamp(0), sourceId(0),
-              dataLen(0), data(nullptr) {}
+    Event() : type(EventType::SystemError), timestamp(0), sourceId(0), dataLen(0), data(nullptr) {}
 
     /// Frees the payload buffer (the Event itself is owned by the caller)
-    ~Event() { delete[] data; data = nullptr; }
+    ~Event() {
+        delete[] data;
+        data = nullptr;
+    }
 };
 
 /**

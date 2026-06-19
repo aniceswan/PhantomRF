@@ -66,8 +66,8 @@ namespace phm::radio {
  * left the chip in async mode. We use `NormalPacket` (== 1) explicitly.
  */
 enum class CcMode : uint8_t {
-    AsyncSerial = 0,  ///< Raw GDO0 bitstream (record / replay)
-    NormalPacket = 1, ///< Standard packet handler (jamming / packet TX)
+    AsyncSerial = 0,   ///< Raw GDO0 bitstream (record / replay)
+    NormalPacket = 1,  ///< Standard packet handler (jamming / packet TX)
 };
 
 /**
@@ -81,11 +81,11 @@ enum class CcMode : uint8_t {
  *   4 = MSK
  */
 enum class CcModulation : uint8_t {
-    FSK2   = 0,
-    GFSK   = 1,
+    FSK2 = 0,
+    GFSK = 1,
     ASK_OOK = 2,
-    FSK4   = 3,
-    MSK    = 4,
+    FSK4 = 3,
+    MSK = 4,
 };
 
 /**
@@ -127,8 +127,7 @@ public:
      * @param gdo2 GDO2 GPIO (used as RX-data in async mode)
      * @return true if the chip responded with a non-zero VERSION register
      */
-    bool setup(int8_t sck, int8_t miso, int8_t mosi,
-               int8_t csn, int8_t gdo0, int8_t gdo2);
+    bool setup(int8_t sck, int8_t miso, int8_t mosi, int8_t csn, int8_t gdo0, int8_t gdo2);
 
     /// True if the chip responded on SPI during `setup()`
     bool isConnected() const { return running_; }
@@ -211,14 +210,12 @@ public:
      *
      * Spawns the worker task pinned to Core 0 at priority 3 (DESIGN §3.3).
      */
-    bool startRangeJam(float start, float stop, float stepMhz,
-                       uint8_t payloadSize = 60);
+    bool startRangeJam(float start, float stop, float stepMhz, uint8_t payloadSize = 60);
 
     /**
      * @brief Jam a user-supplied list of frequencies
      */
-    bool startHopperJam(const float* freqs, uint8_t count,
-                        uint8_t payloadSize = 60);
+    bool startHopperJam(const float* freqs, uint8_t count, uint8_t payloadSize = 60);
 
     /**
      * @brief Jam one of the predefined keyfob bands
@@ -313,38 +310,38 @@ private:
     bool launchWorker(const char* taskName);
 
     // ---- State ---------------------------------------------------------
-    bool     running_       = false;
-    bool     recording_     = false;
-    bool     replaying_     = false;
-    float    currentFreq_   = 433.92f;
-    int8_t   currentPower_  = 12;
-    CcMode   currentMode_   = CcMode::NormalPacket;
+    bool running_ = false;
+    bool recording_ = false;
+    bool replaying_ = false;
+    float currentFreq_ = 433.92f;
+    int8_t currentPower_ = 12;
+    CcMode currentMode_ = CcMode::NormalPacket;
     CcModulation currentMod_ = CcModulation::ASK_OOK;
-    float    currentDataRate_ = 9.6f;
-    uint16_t samplingUs_    = 100;   ///< ~10 kbps default
+    float currentDataRate_ = 9.6f;
+    uint16_t samplingUs_ = 100;  ///< ~10 kbps default
 
     // Heap-allocated junk data for jamming (never zeroed, per upstream)
-    uint8_t* jamData_       = nullptr;
-    size_t   jamDataSize_   = 0;
+    uint8_t* jamData_ = nullptr;
+    size_t jamDataSize_ = 0;
 
     // Recording buffer (PSRAM when available)
-    uint8_t* recordBuf_     = nullptr;
-    size_t   recordBufSize_ = 0;
-    size_t   recordedLen_   = 0;
+    uint8_t* recordBuf_ = nullptr;
+    size_t recordBufSize_ = 0;
+    size_t recordedLen_ = 0;
 
     // Sweep / record parameters for the worker
     enum class Op : uint8_t { None, Spot, Range, Hopper, Keyfob, Record, Replay };
-    Op       op_           = Op::None;
-    float    opStart_      = 0.0f;
-    float    opStop_       = 0.0f;
-    float    opStep_       = 0.0f;
-    const float* opFreqs_  = nullptr;
-    uint8_t  opFreqCount_  = 0;
-    uint8_t  opIndex_      = 0;
-    uint8_t  opPayload_    = 60;
+    Op op_ = Op::None;
+    float opStart_ = 0.0f;
+    float opStop_ = 0.0f;
+    float opStep_ = 0.0f;
+    const float* opFreqs_ = nullptr;
+    uint8_t opFreqCount_ = 0;
+    uint8_t opIndex_ = 0;
+    uint8_t opPayload_ = 60;
     uint32_t opDeadlineMs_ = 0;
 
-    void*        task_      = nullptr;
+    void* task_ = nullptr;
 
     // The third-party driver (single instance, owned by us)
     SmartRC_CC1101* radio_ = nullptr;

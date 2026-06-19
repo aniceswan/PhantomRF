@@ -22,6 +22,7 @@
 
 #include <cstring>
 #include <vector>
+
 #include <unity.h>
 
 // We deliberately test the *real* public surface of FrameBuilder, not a
@@ -37,13 +38,13 @@ namespace fb = phm::util::FrameBuilder;
 namespace phm::util::FrameBuilder {
 
 constexpr size_t kDeauthFrameLen = 26;
-constexpr size_t kBeaconMinLen  = 36;
-constexpr size_t kProbeMinLen   = 36;
+constexpr size_t kBeaconMinLen = 36;
+constexpr size_t kProbeMinLen = 36;
 
-inline size_t makeDeauthFrame(uint8_t* out, size_t out_len,
-                              const uint8_t dst[6], const uint8_t bssid[6],
+inline size_t makeDeauthFrame(uint8_t* out, size_t out_len, const uint8_t dst[6], const uint8_t bssid[6],
                               uint16_t reason) {
-    if (!out || out_len < kDeauthFrameLen) return 0;
+    if (!out || out_len < kDeauthFrameLen)
+        return 0;
     uint8_t* p = out;
     // Frame Control: type=Management(0), subtype=Deauth(12) -> 0xC0 0x00
     *p++ = 0xC0;
@@ -52,11 +53,14 @@ inline size_t makeDeauthFrame(uint8_t* out, size_t out_len,
     *p++ = 0x3A;
     *p++ = 0x00;
     // Address 1: DA (destination)
-    std::memcpy(p, dst, 6);   p += 6;
+    std::memcpy(p, dst, 6);
+    p += 6;
     // Address 2: SA (source) == BSSID for our purposes
-    std::memcpy(p, bssid, 6); p += 6;
+    std::memcpy(p, bssid, 6);
+    p += 6;
     // Address 3: BSSID
-    std::memcpy(p, bssid, 6); p += 6;
+    std::memcpy(p, bssid, 6);
+    p += 6;
     // Sequence control
     *p++ = 0x00;
     *p++ = 0x00;
@@ -73,68 +77,89 @@ inline uint16_t nextSequenceNumber() {
     return static_cast<uint16_t>(seq << 4);
 }
 
-inline size_t makeBeaconFrame(uint8_t* out, size_t out_len,
-                              const uint8_t bssid[6],
-                              const char* ssid, uint8_t channel) {
-    if (!out || out_len < kBeaconMinLen || !ssid) return 0;
+inline size_t makeBeaconFrame(uint8_t* out, size_t out_len, const uint8_t bssid[6], const char* ssid, uint8_t channel) {
+    if (!out || out_len < kBeaconMinLen || !ssid)
+        return 0;
     uint8_t* p = out;
     // FC: beacon
-    *p++ = 0x80; *p++ = 0x00;
+    *p++ = 0x80;
+    *p++ = 0x00;
     // Duration
-    *p++ = 0x00; *p++ = 0x00;
+    *p++ = 0x00;
+    *p++ = 0x00;
     // DA (broadcast)
-    for (int i = 0; i < 6; ++i) *p++ = 0xFF;
+    for (int i = 0; i < 6; ++i)
+        *p++ = 0xFF;
     // SA
-    std::memcpy(p, bssid, 6); p += 6;
+    std::memcpy(p, bssid, 6);
+    p += 6;
     // BSSID
-    std::memcpy(p, bssid, 6); p += 6;
+    std::memcpy(p, bssid, 6);
+    p += 6;
     // Sequence control
-    *p++ = 0x00; *p++ = 0x00;
+    *p++ = 0x00;
+    *p++ = 0x00;
     // Timestamp (8 bytes)
-    for (int i = 0; i < 8; ++i) *p++ = 0x00;
+    for (int i = 0; i < 8; ++i)
+        *p++ = 0x00;
     // Beacon interval (100 TU = 0x0064)
-    *p++ = 0x64; *p++ = 0x00;
+    *p++ = 0x64;
+    *p++ = 0x00;
     // Capabilities (ESS, privacy)
-    *p++ = 0x11; *p++ = 0x04;
+    *p++ = 0x11;
+    *p++ = 0x04;
     // Tagged: SSID
     *p++ = 0x00;  // SSID tag
     size_t ssid_len = std::strlen(ssid);
     *p++ = static_cast<uint8_t>(ssid_len);
-    std::memcpy(p, ssid, ssid_len); p += ssid_len;
+    std::memcpy(p, ssid, ssid_len);
+    p += ssid_len;
     // Tagged: Supported rates
-    *p++ = 0x01; *p++ = 0x08;
+    *p++ = 0x01;
+    *p++ = 0x08;
     const uint8_t rates[8] = {0x82, 0x84, 0x8B, 0x96, 0x0C, 0x12, 0x18, 0x24};
-    std::memcpy(p, rates, sizeof(rates)); p += sizeof(rates);
+    std::memcpy(p, rates, sizeof(rates));
+    p += sizeof(rates);
     // Tagged: DS Parameter Set (current channel)
-    *p++ = 0x03; *p++ = 0x01; *p++ = channel;
+    *p++ = 0x03;
+    *p++ = 0x01;
+    *p++ = channel;
     return static_cast<size_t>(p - out);
 }
 
-inline size_t makeProbeRequestFrame(uint8_t* out, size_t out_len,
-                                    const uint8_t src[6],
-                                    const char* ssid) {
-    if (!out || out_len < kProbeMinLen || !ssid) return 0;
+inline size_t makeProbeRequestFrame(uint8_t* out, size_t out_len, const uint8_t src[6], const char* ssid) {
+    if (!out || out_len < kProbeMinLen || !ssid)
+        return 0;
     uint8_t* p = out;
     // FC: probe request
-    *p++ = 0x40; *p++ = 0x00;
-    *p++ = 0x00; *p++ = 0x00;
+    *p++ = 0x40;
+    *p++ = 0x00;
+    *p++ = 0x00;
+    *p++ = 0x00;
     // DA broadcast
-    for (int i = 0; i < 6; ++i) *p++ = 0xFF;
+    for (int i = 0; i < 6; ++i)
+        *p++ = 0xFF;
     // SA
-    std::memcpy(p, src, 6); p += 6;
+    std::memcpy(p, src, 6);
+    p += 6;
     // BSSID broadcast
-    for (int i = 0; i < 6; ++i) *p++ = 0xFF;
+    for (int i = 0; i < 6; ++i)
+        *p++ = 0xFF;
     // Sequence control
-    *p++ = 0x00; *p++ = 0x00;
+    *p++ = 0x00;
+    *p++ = 0x00;
     // Tagged: SSID
     *p++ = 0x00;
     size_t ssid_len = std::strlen(ssid);
     *p++ = static_cast<uint8_t>(ssid_len);
-    std::memcpy(p, ssid, ssid_len); p += ssid_len;
+    std::memcpy(p, ssid, ssid_len);
+    p += ssid_len;
     // Tagged: Supported rates
-    *p++ = 0x01; *p++ = 0x08;
+    *p++ = 0x01;
+    *p++ = 0x08;
     const uint8_t rates[8] = {0x82, 0x84, 0x8B, 0x96, 0x0C, 0x12, 0x18, 0x24};
-    std::memcpy(p, rates, sizeof(rates)); p += sizeof(rates);
+    std::memcpy(p, rates, sizeof(rates));
+    p += sizeof(rates);
     return static_cast<size_t>(p - out);
 }
 
@@ -158,7 +183,7 @@ void tearDown(void) {}
 
 void testDeauthFrame_is_26_bytes(void) {
     uint8_t buf[64] = {0};
-    const uint8_t dst[6]   = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0x01};
+    const uint8_t dst[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0x01};
     const uint8_t bssid[6] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55};
     const size_t n = fb::makeDeauthFrame(buf, sizeof(buf), dst, bssid, 0x0001u);
     TEST_ASSERT_EQUAL_size_t(26u, n);
@@ -166,7 +191,7 @@ void testDeauthFrame_is_26_bytes(void) {
 
 void testDeauthFrame_frame_control_is_c0_00(void) {
     uint8_t buf[64] = {0};
-    const uint8_t dst[6]   = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    const uint8_t dst[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
     const uint8_t bssid[6] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55};
     fb::makeDeauthFrame(buf, sizeof(buf), dst, bssid, 0x0007u);
     TEST_ASSERT_EQUAL_HEX8(0xC0, buf[0]);
@@ -175,11 +200,11 @@ void testDeauthFrame_frame_control_is_c0_00(void) {
 
 void testDeauthFrame_addresses(void) {
     uint8_t buf[64] = {0};
-    const uint8_t dst[6]   = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x01};
+    const uint8_t dst[6] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x01};
     const uint8_t bssid[6] = {0xCA, 0xFE, 0xBA, 0xBE, 0x12, 0x34};
     fb::makeDeauthFrame(buf, sizeof(buf), dst, bssid, 0x0001u);
     // DA @ offset 4
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(dst,   &buf[4],  6);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(dst, &buf[4], 6);
     // SA @ offset 10
     TEST_ASSERT_EQUAL_HEX8_ARRAY(bssid, &buf[10], 6);
     // BSSID @ offset 16
@@ -188,7 +213,7 @@ void testDeauthFrame_addresses(void) {
 
 void testDeauthFrame_reason_code_is_little_endian(void) {
     uint8_t buf[64] = {0};
-    const uint8_t dst[6]   = {0};
+    const uint8_t dst[6] = {0};
     const uint8_t bssid[6] = {0};
     fb::makeDeauthFrame(buf, sizeof(buf), dst, bssid, 0x0001u);
     // 802.11 reason codes are little-endian. Reason 1 = "unspecified".

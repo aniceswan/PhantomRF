@@ -94,7 +94,7 @@ jobs:
           set -euo pipefail
           # Allow inline disable comments in the project docs.
           echo "Running markdownlint on docs/ ..."
-          markdownlint docs/**/*.md --ignore node_modules || true
+          markdownlint docs/**/*.md --ignore node_modules
           echo "Running markdownlint on root .md files ..."
           markdownlint \
             README.md \

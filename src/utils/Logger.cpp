@@ -38,7 +38,7 @@ void Logger::log(LogLevel level, const char* tag, const char* message) {
     // Build the ring buffer entry
     LogEntry e{};
     e.timestamp = millis();
-    e.level     = level;
+    e.level = level;
 
     // Copy the tag, truncating safely
     if (tag != nullptr) {
@@ -99,7 +99,7 @@ const LogEntry* Logger::entryAt(size_t index) const {
     }
     // index 0 = oldest entry currently held
     const size_t start = (count_ < PHM_LOG_RING_SIZE) ? 0 : writeIndex_;
-    const size_t pos   = (start + index) % PHM_LOG_RING_SIZE;
+    const size_t pos = (start + index) % PHM_LOG_RING_SIZE;
     return &ring_[pos];
 }
 
@@ -109,17 +109,17 @@ void Logger::clear() {
         e = LogEntry{};
     }
     writeIndex_ = 0;
-    count_      = 0;
+    count_ = 0;
 }
 
 // ---------------------------------------------------------------------------
 const char* Logger::levelName(LogLevel level) {
     switch (level) {
-        case LogLevel::Verbose: return "VRB";
-        case LogLevel::Debug:   return "DBG";
-        case LogLevel::Info:    return "INF";
-        case LogLevel::Warn:    return "WRN";
-        case LogLevel::Error:   return "ERR";
+    case LogLevel::Verbose: return "VRB";
+    case LogLevel::Debug: return "DBG";
+    case LogLevel::Info: return "INF";
+    case LogLevel::Warn: return "WRN";
+    case LogLevel::Error: return "ERR";
     }
     return "??";
 }

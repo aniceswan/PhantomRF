@@ -59,22 +59,22 @@ public:
     uint8_t shutdownReason() const { return shutdownReason_; }
 
     // ---- Shutdown reason codes -------------------------------------------
-    static constexpr uint8_t kReasonNone        = 0;
-    static constexpr uint8_t kReasonOverTemp    = 1;
-    static constexpr uint8_t kReasonBrownout    = 2;
-    static constexpr uint8_t kReasonLowBattery  = 3;
+    static constexpr uint8_t kReasonNone = 0;
+    static constexpr uint8_t kReasonOverTemp = 1;
+    static constexpr uint8_t kReasonBrownout = 2;
+    static constexpr uint8_t kReasonLowBattery = 3;
     static constexpr uint8_t kReasonUserRequest = 4;
 
 private:
-    float    readTemperatureC();
+    float readTemperatureC();
     uint16_t readVbatMilliVolts();
 
-    uint32_t lastUpdateMs_  = 0;
-    float    lastTempC_     = 0.0f;
-    uint16_t lastVbatMv_    = 0;
-    bool     throttling_    = false;
-    bool     shutdown_      = false;
-    uint8_t  shutdownReason_ = kReasonNone;
+    uint32_t lastUpdateMs_ = 0;
+    float lastTempC_ = 0.0f;
+    uint16_t lastVbatMv_ = 0;
+    bool throttling_ = false;
+    bool shutdown_ = false;
+    uint8_t shutdownReason_ = kReasonNone;
 };
 
 /// Singleton instance, defined in Power.cpp

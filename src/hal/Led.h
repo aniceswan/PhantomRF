@@ -20,9 +20,9 @@
  */
 #pragma once
 
-#include <stdint.h>
-
 #include "hal/Board.h"
+
+#include <stdint.h>
 
 namespace phm::hal {
 
@@ -32,14 +32,14 @@ namespace phm::hal {
  * The `Off` value is special: it forces all channels to 0% duty.
  */
 enum class LedColor : uint8_t {
-    Off     = 0,
-    Red     = 1,
-    Green   = 2,
-    Blue    = 3,
-    Yellow  = 4,  ///< R + G
-    Cyan    = 5,  ///< G + B
+    Off = 0,
+    Red = 1,
+    Green = 2,
+    Blue = 3,
+    Yellow = 4,   ///< R + G
+    Cyan = 5,     ///< G + B
     Magenta = 6,  ///< R + B
-    White   = 7,  ///< R + G + B
+    White = 7,    ///< R + G + B
 };
 
 /**
@@ -82,23 +82,23 @@ private:
     void startBlink(LedColor c, uint16_t period_ms, uint8_t count);
     void startBreathe(LedColor c);
 
-    LedColor  current_    = LedColor::Off;
-    uint32_t  lastUpdate_  = 0;
-    bool      isPwm_       = false;
+    LedColor current_ = LedColor::Off;
+    uint32_t lastUpdate_ = 0;
+    bool isPwm_ = false;
 
     // LEDC channels and current duty values for [R, G, B]
-    int       pwmChannels_[3] = { -1, -1, -1 };
-    uint8_t   pwmDuty_[3]     = {   0,   0,   0 };
+    int pwmChannels_[3] = {-1, -1, -1};
+    uint8_t pwmDuty_[3] = {0, 0, 0};
 
     // Animation state
     enum class Anim : uint8_t { None, Blink, Breathe };
-    Anim      anim_           = Anim::None;
-    LedColor  animColor_      = LedColor::Off;
-    uint16_t  animPeriodMs_   = 0;
-    uint8_t   animCount_      = 0;     ///< remaining pulses (Blink only)
-    uint8_t   animTotal_      = 0;     ///< total pulses for bookkeeping
-    uint32_t  animStarted_    = 0;     ///< millis() when last phase started
-    bool      animPhaseOn_    = false; ///< Blink: true while LED is on
+    Anim anim_ = Anim::None;
+    LedColor animColor_ = LedColor::Off;
+    uint16_t animPeriodMs_ = 0;
+    uint8_t animCount_ = 0;     ///< remaining pulses (Blink only)
+    uint8_t animTotal_ = 0;     ///< total pulses for bookkeeping
+    uint32_t animStarted_ = 0;  ///< millis() when last phase started
+    bool animPhaseOn_ = false;  ///< Blink: true while LED is on
 };
 
 /// Singleton instance, defined in Led.cpp

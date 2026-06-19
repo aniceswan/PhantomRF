@@ -25,16 +25,15 @@
  */
 #pragma once
 
-#include <stddef.h>
-#include <stdint.h>
+#include "core/Module.h"
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include <ESPAsyncWebServer.h>
-#include <DNSServer.h>
 #include <AsyncTCP.h>
-
-#include "core/Module.h"
+#include <DNSServer.h>
+#include <ESPAsyncWebServer.h>
+#include <stddef.h>
+#include <stdint.h>
 
 namespace phm::ui {
 
@@ -53,11 +52,11 @@ public:
     static constexpr uint8_t MODULE_ID = 0xE0;
 
     // ---- IModule ---------------------------------------------------------
-    const char* name()        const override { return "WebServer"; }
+    const char* name() const override { return "WebServer"; }
     const char* description() const override { return "WiFi AP + Web UI + WebSocket + REST API"; }
-    uint8_t     id()          const override { return MODULE_ID; }
-    void setup()    override;
-    void loop()     override;
+    uint8_t id() const override { return MODULE_ID; }
+    void setup() override;
+    void loop() override;
     void teardown() override;
 
     // ---- Broadcasting ----------------------------------------------------
@@ -124,7 +123,8 @@ private:
     void handleFileDownload(AsyncWebServerRequest* req, const String& name);
     void handleFileDelete(AsyncWebServerRequest* req, const String& name);
     void handleCli(AsyncWebServerRequest* req, uint8_t* data, size_t len, size_t index, size_t total);
-    void handleOta(AsyncWebServerRequest* req, const String& filename, size_t index, uint8_t* data, size_t len, bool final);
+    void handleOta(AsyncWebServerRequest* req, const String& filename, size_t index, uint8_t* data, size_t len,
+                   bool final);
     void handleReset(AsyncWebServerRequest* req);
 
     // ---- Auth & rate limiting -------------------------------------------
@@ -135,8 +135,8 @@ private:
     void noteSuccessfulAuth();
 
     // ---- WebSocket event sink -------------------------------------------
-    void onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type,
-                   void* arg, uint8_t* data, size_t len);
+    void onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data,
+                   size_t len);
 
     // ---- Misc helpers ----------------------------------------------------
     void sendJson(AsyncWebServerRequest* req, int code, const JsonDocument& doc);
@@ -144,26 +144,26 @@ private:
     String urlDecode(const String& src);
 
     // ---- Networking state ------------------------------------------------
-    AsyncWebServer  server_{80};                ///< HTTP server
-    AsyncWebSocket  ws_{"/ws"};                 ///< WebSocket endpoint
-    DNSServer       dns_;                       ///< Captive-portal DNS
+    AsyncWebServer server_{80};  ///< HTTP server
+    AsyncWebSocket ws_{"/ws"};   ///< WebSocket endpoint
+    DNSServer dns_;              ///< Captive-portal DNS
 
     // ---- AP state --------------------------------------------------------
-    char  apSsid_[33]      = {0};
-    char  apPassword_[65]  = {0};
-    bool  apActive_        = false;
-    bool  dnsStarted_      = false;
+    char apSsid_[33] = {0};
+    char apPassword_[65] = {0};
+    bool apActive_ = false;
+    bool dnsStarted_ = false;
 
     // ---- Rate limiting (in RAM, DESIGN §20.2) ---------------------------
-    static constexpr uint8_t  kMaxFailedAttempts = 5;
-    static constexpr uint32_t kLockoutMs         = 60UL * 1000UL;
-    uint8_t  failedAttempts_   = 0;
-    uint32_t lockoutUntilMs_   = 0;
+    static constexpr uint8_t kMaxFailedAttempts = 5;
+    static constexpr uint32_t kLockoutMs = 60UL * 1000UL;
+    uint8_t failedAttempts_ = 0;
+    uint32_t lockoutUntilMs_ = 0;
 
     // ---- Push timers (driven from loop()) --------------------------------
-    uint32_t lastStatusPushMs_   = 0;
+    uint32_t lastStatusPushMs_ = 0;
     uint32_t lastSpectrumPushMs_ = 0;
-    uint32_t seqCounter_         = 0;
+    uint32_t seqCounter_ = 0;
 
     // ---- Server time (for `ts` field) ------------------------------------
     uint32_t bootTimeMs_ = 0;

@@ -87,14 +87,18 @@ constexpr float cc1101RegToFreq(uint32_t reg) {
  * @return Inclusive range of nRF24 channels
  */
 inline Nrf24Range wifiChannelToNrf24Range(uint8_t wifiCh) {
-    if (wifiCh < 1u)  wifiCh = 1u;
-    if (wifiCh > 14u) wifiCh = 14u;
+    if (wifiCh < 1u)
+        wifiCh = 1u;
+    if (wifiCh > 14u)
+        wifiCh = 14u;
     uint16_t center = (wifiCh == 14u) ? uint16_t(2484u) : uint16_t(2412u + 5u * (wifiCh - 1u));
     int start = int(center) - 11 - 2400;
-    int stop  = int(center) + 11 - 2400;
-    if (start < 0)   start = 0;
-    if (stop  > 125) stop  = 125;
-    return { uint8_t(start), uint8_t(stop) };
+    int stop = int(center) + 11 - 2400;
+    if (start < 0)
+        start = 0;
+    if (stop > 125)
+        stop = 125;
+    return {uint8_t(start), uint8_t(stop)};
 }
 
 /**
@@ -107,14 +111,18 @@ inline Nrf24Range wifiChannelToNrf24Range(uint8_t wifiCh) {
  * @return Inclusive range of nRF24 channels
  */
 inline Nrf24Range zigbeeChannelToNrf24Range(uint8_t zigCh) {
-    if (zigCh < 11u) zigCh = 11u;
-    if (zigCh > 26u) zigCh = 26u;
+    if (zigCh < 11u)
+        zigCh = 11u;
+    if (zigCh > 26u)
+        zigCh = 26u;
     uint16_t center = uint16_t(2405u + 5u * (zigCh - 11u));
     int start = int(center) - 1 - 2400;
-    int stop  = int(center) + 1 - 2400;
-    if (start < 0)   start = 0;
-    if (stop  > 125) stop  = 125;
-    return { uint8_t(start), uint8_t(stop) };
+    int stop = int(center) + 1 - 2400;
+    if (start < 0)
+        start = 0;
+    if (stop > 125)
+        stop = 125;
+    return {uint8_t(start), uint8_t(stop)};
 }
 
 /**
@@ -139,11 +147,14 @@ constexpr uint8_t bleChannelToNrf24(uint8_t bleCh) {
  * @return BLE channel 0..39, or 0xFF if not on grid
  */
 inline uint8_t nrf24ToBleChannel(uint8_t nrfCh) {
-    if (nrfCh > 125u) nrfCh = 125u;
+    if (nrfCh > 125u)
+        nrfCh = 125u;
     int offset = int(nrfCh) - 2;
-    if (offset < 0 || (offset % 2) != 0) return 0xFFu;
+    if (offset < 0 || (offset % 2) != 0)
+        return 0xFFu;
     int ble = offset / 2;
-    if (ble < 0 || ble > 39) return 0xFFu;
+    if (ble < 0 || ble > 39)
+        return 0xFFu;
     return uint8_t(ble);
 }
 

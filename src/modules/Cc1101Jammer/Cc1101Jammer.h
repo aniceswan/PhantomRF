@@ -15,13 +15,11 @@
  */
 #pragma once
 
+#include "core/Module.h"
+
 #include <Arduino.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include <stdint.h>
-
-#include "core/Module.h"
 
 // forward decl removed: use FreeRTOS TaskHandle_t via <freertos/task.h>
 // typedef removed: use FreeRTOS TaskHandle_t via <freertos/task.h>
@@ -36,10 +34,9 @@ namespace phm::modules {
  */
 class Cc1101Jammer : public ::phm::IModule {
 public:
-    static constexpr uint8_t  MODULE_ID   = 0x02;
+    static constexpr uint8_t MODULE_ID = 0x02;
     static constexpr const char* MODULE_NAME = "cc1101-jammer";
-    static constexpr const char* MODULE_DESC =
-        "Sub-GHz jammer using CC1101 module";
+    static constexpr const char* MODULE_DESC = "Sub-GHz jammer using CC1101 module";
 
     uint8_t id() const override { return MODULE_ID; }
     const char* name() const override { return MODULE_NAME; }
@@ -53,24 +50,24 @@ public:
 
     /// Which sub-mode are we in?
     enum class Target : uint8_t {
-        Spot   = 0,  ///< Single frequency
-        Range  = 1,  ///< Sweep start..stop with given step
+        Spot = 0,    ///< Single frequency
+        Range = 1,   ///< Sweep start..stop with given step
         Hopper = 2,  ///< User-supplied frequency list, round-robin
         Keyfob = 3,  ///< Predefined 9 keyfob bands
     };
 
     /// User-tweakable parameters for `startAttack()`
     struct AttackConfig {
-        Target    target          = Target::Spot;
-        float     freqMhz         = 433.92f;   ///< Spot: single freq
-        float     rangeStart      = 430.0f;    ///< Range: start MHz
-        float     rangeStop       = 450.0f;    ///< Range: stop MHz
-        float     rangeStep       = 1.0f;      ///< Range: step MHz
-        float     hopperFreqs[16] = {};        ///< Hopper: up to 16 freqs
-        uint8_t   hopperCount     = 0;         ///< Hopper: number of valid entries
-        uint8_t   keyfobIndex     = 8;         ///< Keyfob: index into the table (default 433.92)
-        uint8_t   payloadSize     = 60;        ///< Bytes pushed before CW enable
-        uint16_t  recordDurationMs = 30000;    ///< Record: cap on capture time
+        Target target = Target::Spot;
+        float freqMhz = 433.92f;            ///< Spot: single freq
+        float rangeStart = 430.0f;          ///< Range: start MHz
+        float rangeStop = 450.0f;           ///< Range: stop MHz
+        float rangeStep = 1.0f;             ///< Range: step MHz
+        float hopperFreqs[16] = {};         ///< Hopper: up to 16 freqs
+        uint8_t hopperCount = 0;            ///< Hopper: number of valid entries
+        uint8_t keyfobIndex = 8;            ///< Keyfob: index into the table (default 433.92)
+        uint8_t payloadSize = 60;           ///< Bytes pushed before CW enable
+        uint16_t recordDurationMs = 30000;  ///< Record: cap on capture time
     };
 
     bool startAttack(const AttackConfig& cfg);
@@ -103,7 +100,7 @@ private:
 
     // ---- State -----------------------------------------------------------
     AttackConfig config_{};
-    bool         running_  = false;
+    bool running_ = false;
 
     TaskHandle_t task_ = nullptr;
 

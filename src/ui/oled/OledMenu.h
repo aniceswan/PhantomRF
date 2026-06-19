@@ -26,14 +26,13 @@
  */
 #pragma once
 
+#include "core/Module.h"
+#include "hal/Buttons.h"
+
+#include <Adafruit_SSD1306.h>
 #include <Arduino.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include <Adafruit_SSD1306.h>
-
-#include "core/Module.h"
-#include "hal/Buttons.h"
 
 namespace phm::ui {
 
@@ -52,40 +51,40 @@ public:
     static constexpr uint8_t MODULE_ID = 0xE1;
 
     /// OLED geometry (128x64 is the M0 default; 128x32 supported in M1)
-    static constexpr int kWidth  = 128;
+    static constexpr int kWidth = 128;
     static constexpr int kHeight = 64;
 
     /// Refresh rates
-    static constexpr uint32_t kIdleRefreshMs    = 100;  ///< 10 Hz when idle
-    static constexpr uint32_t kActiveRefreshMs  = 33;   ///< ~30 Hz in live mode
+    static constexpr uint32_t kIdleRefreshMs = 100;   ///< 10 Hz when idle
+    static constexpr uint32_t kActiveRefreshMs = 33;  ///< ~30 Hz in live mode
 
     /// Splash screen dwell time
-    static constexpr uint32_t kSplashMs         = 2000;
+    static constexpr uint32_t kSplashMs = 2000;
 
     /// Top-level screens. The actual per-attack screens live under
     /// `Screen::Attack` and are selected by a follow-up state variable.
     enum class Screen : uint8_t {
-        Splash          = 0,
-        MainMenu        = 1,
-        BluetoothJam    = 2,
-        WifiAttack      = 3,
-        Spectrum2_4GHz  = 4,
-        SpectrumSubGHz  = 5,
-        SubGhzJam       = 6,
-        BleAttack       = 7,
-        Settings        = 8,
-        Files           = 9,
-        Info            = 10,
-        Attack          = 11,   ///< Generic "running" screen
-        Error           = 12,   ///< Show last error for a few seconds
+        Splash = 0,
+        MainMenu = 1,
+        BluetoothJam = 2,
+        WifiAttack = 3,
+        Spectrum2_4GHz = 4,
+        SpectrumSubGHz = 5,
+        SubGhzJam = 6,
+        BleAttack = 7,
+        Settings = 8,
+        Files = 9,
+        Info = 10,
+        Attack = 11,  ///< Generic "running" screen
+        Error = 12,   ///< Show last error for a few seconds
     };
 
     // ---- IModule ---------------------------------------------------------
-    const char* name()        const override { return "OledMenu"; }
+    const char* name() const override { return "OledMenu"; }
     const char* description() const override { return "SSD1306 128x64 menu (1/2/3 buttons)"; }
-    uint8_t     id()          const override { return MODULE_ID; }
+    uint8_t id() const override { return MODULE_ID; }
     void setup() override;
-    void loop()  override;
+    void loop() override;
 
     // ---- Public API -----------------------------------------------------
 
@@ -142,31 +141,31 @@ private:
     // ---- Helpers ---------------------------------------------------------
     void centerText(const char* text, int y);
     void formatUptime(char* out, size_t len);
-    int  rssiBars(int8_t rssi);
+    int rssiBars(int8_t rssi);
 
     // ---- State -----------------------------------------------------------
-    Adafruit_SSD1306* display_ = nullptr;   ///< Owned by the library; we just keep a pointer
-    Screen  current_           = Screen::Splash;
-    bool    dirty_             = true;
-    uint32_t lastDraw_         = 0;
-    uint32_t splashEnd_        = 0;       ///< millis() at which splash should clear
+    Adafruit_SSD1306* display_ = nullptr;  ///< Owned by the library; we just keep a pointer
+    Screen current_ = Screen::Splash;
+    bool dirty_ = true;
+    uint32_t lastDraw_ = 0;
+    uint32_t splashEnd_ = 0;  ///< millis() at which splash should clear
 
     /// Index of the highlighted item in the current menu (0..6)
-    uint8_t menuIndex_         = 0;
+    uint8_t menuIndex_ = 0;
 
     /// For "running" screens we cache the attack name so the renderer
     /// can show "WiFi Deauth (ch 6)" while the radio is busy.
-    char    attackName_[32]    = {0};
-    uint8_t attackChannel_     = 0;
-    int8_t  attackRssi_        = -100;
+    char attackName_[32] = {0};
+    uint8_t attackChannel_ = 0;
+    int8_t attackRssi_ = -100;
 
     /// Transient error / info overlay
-    char    overlayMsg_[32]    = {0};
-    uint32_t overlayEnd_       = 0;
-    Screen  savedScreen_       = Screen::MainMenu;
+    char overlayMsg_[32] = {0};
+    uint32_t overlayEnd_ = 0;
+    Screen savedScreen_ = Screen::MainMenu;
 
     /// Button config cache (so we don't read NVS every loop tick)
-    uint8_t buttonConfig_      = 2;
+    uint8_t buttonConfig_ = 2;
 };
 
 /// Singleton instance, defined in OledMenu.cpp

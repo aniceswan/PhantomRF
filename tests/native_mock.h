@@ -50,14 +50,14 @@
 // <stdint.h>, but we make them explicit so the host build is hermetic.
 // ---------------------------------------------------------------------------
 
-using uint8_t  = std::uint8_t;
+using uint8_t = std::uint8_t;
 using uint16_t = std::uint16_t;
 using uint32_t = std::uint32_t;
 using uint64_t = std::uint64_t;
-using int8_t   = std::int8_t;
-using int16_t  = std::int16_t;
-using int32_t  = std::int32_t;
-using int64_t  = std::int64_t;
+using int8_t = std::int8_t;
+using int16_t = std::int16_t;
+using int32_t = std::int32_t;
+using int64_t = std::int64_t;
 
 #ifndef HIGH
 #define HIGH 0x1
@@ -122,8 +122,12 @@ inline uint64_t monotonicMicros() {
 
 }  // namespace phm::test
 
-inline uint32_t millis() { return static_cast<uint32_t>(phm::test::monotonicMillis()); }
-inline uint32_t micros() { return static_cast<uint32_t>(phm::test::monotonicMicros()); }
+inline uint32_t millis() {
+    return static_cast<uint32_t>(phm::test::monotonicMillis());
+}
+inline uint32_t micros() {
+    return static_cast<uint32_t>(phm::test::monotonicMicros());
+}
 
 inline void delay(uint32_t ms) {
     // In a unit-test we *do not* want to actually sleep for ms — most
@@ -159,7 +163,9 @@ inline void digitalWrite(int pin, int value) {
     phm::test::gpioPinState()[pin] = value;
 }
 
-inline int analogRead(int /*pin*/) { return 0; }
+inline int analogRead(int /*pin*/) {
+    return 0;
+}
 inline void analogWrite(int /*pin*/, int /*value*/) {}
 
 // ---------------------------------------------------------------------------
@@ -181,57 +187,47 @@ public:
     }
 
     size_t print(const char* s) {
-        if (!s) return 0;
+        if (!s)
+            return 0;
         return write(reinterpret_cast<const uint8_t*>(s), std::strlen(s));
     }
-    size_t print(const std::string& s) {
-        return write(reinterpret_cast<const uint8_t*>(s.data()), s.size());
-    }
+    size_t print(const std::string& s) { return write(reinterpret_cast<const uint8_t*>(s.data()), s.size()); }
     size_t print(int v) {
         char buf[16];
         int n = std::snprintf(buf, sizeof(buf), "%d", v);
-        return write(reinterpret_cast<const uint8_t*>(buf),
-                     static_cast<size_t>(n > 0 ? n : 0));
+        return write(reinterpret_cast<const uint8_t*>(buf), static_cast<size_t>(n > 0 ? n : 0));
     }
     size_t print(unsigned v) {
         char buf[16];
         int n = std::snprintf(buf, sizeof(buf), "%u", v);
-        return write(reinterpret_cast<const uint8_t*>(buf),
-                     static_cast<size_t>(n > 0 ? n : 0));
+        return write(reinterpret_cast<const uint8_t*>(buf), static_cast<size_t>(n > 0 ? n : 0));
     }
     size_t print(long v) {
         char buf[24];
         int n = std::snprintf(buf, sizeof(buf), "%ld", v);
-        return write(reinterpret_cast<const uint8_t*>(buf),
-                     static_cast<size_t>(n > 0 ? n : 0));
+        return write(reinterpret_cast<const uint8_t*>(buf), static_cast<size_t>(n > 0 ? n : 0));
     }
     size_t print(unsigned long v) {
         char buf[24];
         int n = std::snprintf(buf, sizeof(buf), "%lu", v);
-        return write(reinterpret_cast<const uint8_t*>(buf),
-                     static_cast<size_t>(n > 0 ? n : 0));
+        return write(reinterpret_cast<const uint8_t*>(buf), static_cast<size_t>(n > 0 ? n : 0));
     }
     size_t print(long long v) {
         char buf[32];
         int n = std::snprintf(buf, sizeof(buf), "%lld", v);
-        return write(reinterpret_cast<const uint8_t*>(buf),
-                     static_cast<size_t>(n > 0 ? n : 0));
+        return write(reinterpret_cast<const uint8_t*>(buf), static_cast<size_t>(n > 0 ? n : 0));
     }
     size_t print(unsigned long long v) {
         char buf[32];
         int n = std::snprintf(buf, sizeof(buf), "%llu", v);
-        return write(reinterpret_cast<const uint8_t*>(buf),
-                     static_cast<size_t>(n > 0 ? n : 0));
+        return write(reinterpret_cast<const uint8_t*>(buf), static_cast<size_t>(n > 0 ? n : 0));
     }
     size_t print(double v, int decimals = 2) {
         char buf[64];
         int n = std::snprintf(buf, sizeof(buf), "%.*f", decimals, v);
-        return write(reinterpret_cast<const uint8_t*>(buf),
-                     static_cast<size_t>(n > 0 ? n : 0));
+        return write(reinterpret_cast<const uint8_t*>(buf), static_cast<size_t>(n > 0 ? n : 0));
     }
-    size_t print(float v, int decimals = 2) {
-        return print(static_cast<double>(v), decimals);
-    }
+    size_t print(float v, int decimals = 2) { return print(static_cast<double>(v), decimals); }
     size_t println(const char* s) {
         size_t w = print(s);
         w += write(static_cast<uint8_t>('\n'));
@@ -277,23 +273,22 @@ public:
         w += write(static_cast<uint8_t>('\n'));
         return w;
     }
-    size_t println(float v, int decimals = 2) {
-        return println(static_cast<double>(v), decimals);
-    }
-    size_t println() {
-        return write(static_cast<uint8_t>('\n'));
-    }
+    size_t println(float v, int decimals = 2) { return println(static_cast<double>(v), decimals); }
+    size_t println() { return write(static_cast<uint8_t>('\n')); }
 
     size_t printf(const char* fmt, ...) {
-        if (!fmt) return 0;
+        if (!fmt)
+            return 0;
         char buf[512];
         std::va_list ap;
         va_start(ap, fmt);
         int n = std::vsnprintf(buf, sizeof(buf), fmt, ap);
         va_end(ap);
-        if (n < 0) return 0;
+        if (n < 0)
+            return 0;
         size_t len = static_cast<size_t>(n);
-        if (len >= sizeof(buf)) len = sizeof(buf) - 1;
+        if (len >= sizeof(buf))
+            len = sizeof(buf) - 1;
         return write(reinterpret_cast<const uint8_t*>(buf), len);
     }
 };
@@ -321,9 +316,11 @@ public:
         va_start(ap, fmt);
         int n = std::vsnprintf(buf, sizeof(buf), fmt, ap);
         va_end(ap);
-        if (n < 0) return 0;
+        if (n < 0)
+            return 0;
         size_t len = static_cast<size_t>(n);
-        if (len >= sizeof(buf)) len = sizeof(buf) - 1;
+        if (len >= sizeof(buf))
+            len = sizeof(buf) - 1;
         // The using-declaration above re-exports the base class's
         // (buf, len) overload so we can call it directly.
         return Print::write(reinterpret_cast<const uint8_t*>(buf), len);
@@ -352,7 +349,8 @@ namespace phm::test {
 class Preferences {
 public:
     bool begin(const char* name, bool /*readOnly*/ = false) {
-        if (!name) name = "";
+        if (!name)
+            name = "";
         _ns = name;
         // The map is shared across all "namespaces" — fine for unit
         // tests, which only ever open a single namespace at a time.
@@ -374,32 +372,34 @@ public:
     }
 
     bool remove(const char* key) {
-        if (!key) return false;
+        if (!key)
+            return false;
         std::lock_guard<std::mutex> _lk(_mtx);
         return _store.erase(_ns + "::" + key) > 0;
     }
 
     size_t putString(const char* key, const char* value) {
-        if (!key || !value) return 0;
+        if (!key || !value)
+            return 0;
         std::lock_guard<std::mutex> _lk(_mtx);
         _store[_ns + "::" + key] = value;
         return std::strlen(value);
     }
-    size_t putString(const char* key, const std::string& value) {
-        return putString(key, value.c_str());
-    }
+    size_t putString(const char* key, const std::string& value) { return putString(key, value.c_str()); }
 
     std::string getString(const char* key, const std::string& defaultValue = "") const {
-        if (!key) return defaultValue;
+        if (!key)
+            return defaultValue;
         std::lock_guard<std::mutex> _lk(_mtx);
         auto it = _store.find(_ns + "::" + key);
-        if (it == _store.end()) return defaultValue;
+        if (it == _store.end())
+            return defaultValue;
         return it->second;
     }
 
-    template <typename T>
-    size_t putBytes(const char* key, const T* buf, size_t len) {
-        if (!key || !buf) return 0;
+    template<typename T> size_t putBytes(const char* key, const T* buf, size_t len) {
+        if (!key || !buf)
+            return 0;
         std::lock_guard<std::mutex> _lk(_mtx);
         std::string encoded;
         encoded.resize(sizeof(T) * len);
@@ -408,12 +408,13 @@ public:
         return len;
     }
 
-    template <typename T>
-    size_t getBytes(const char* key, T* buf, size_t len) const {
-        if (!key || !buf) return 0;
+    template<typename T> size_t getBytes(const char* key, T* buf, size_t len) const {
+        if (!key || !buf)
+            return 0;
         std::lock_guard<std::mutex> _lk(_mtx);
         auto it = _store.find(_ns + "::" + key);
-        if (it == _store.end()) return 0;
+        if (it == _store.end())
+            return 0;
         const std::string& encoded = it->second;
         size_t max = std::min(len * sizeof(T), encoded.size());
         std::memcpy(buf, encoded.data(), max);
@@ -423,25 +424,27 @@ public:
     // 32-bit signed integer helpers (the only ones the Settings module
     // actually uses besides strings/bytes).
     int32_t getInt(const char* key, int32_t defaultValue = 0) const {
-        if (!key) return defaultValue;
+        if (!key)
+            return defaultValue;
         std::lock_guard<std::mutex> _lk(_mtx);
         auto it = _store.find(_ns + "::" + key);
-        if (it == _store.end()) return defaultValue;
+        if (it == _store.end())
+            return defaultValue;
         try {
             return static_cast<int32_t>(std::stol(it->second));
-        } catch (...) {
-            return defaultValue;
-        }
+        } catch (...) { return defaultValue; }
     }
     size_t putInt(const char* key, int32_t value) {
-        if (!key) return 0;
+        if (!key)
+            return 0;
         std::lock_guard<std::mutex> _lk(_mtx);
         _store[_ns + "::" + key] = std::to_string(value);
         return sizeof(int32_t);
     }
 
     bool isKey(const char* key) const {
-        if (!key) return false;
+        if (!key)
+            return false;
         std::lock_guard<std::mutex> _lk(_mtx);
         return _store.count(_ns + "::" + key) > 0;
     }
@@ -470,7 +473,10 @@ class IPAddress {
 public:
     IPAddress() : a_{0, 0, 0, 0} {}
     IPAddress(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
-        a_[0] = a; a_[1] = b; a_[2] = c; a_[3] = d;
+        a_[0] = a;
+        a_[1] = b;
+        a_[2] = c;
+        a_[3] = d;
     }
     uint8_t operator[](int i) const { return a_[i]; }
     std::string toString() const {
@@ -478,6 +484,7 @@ public:
         std::snprintf(buf, sizeof(buf), "%u.%u.%u.%u", a_[0], a_[1], a_[2], a_[3]);
         return buf;
     }
+
 private:
     uint8_t a_[4];
 };
@@ -497,7 +504,10 @@ public:
         _running = true;
         return true;
     }
-    bool softAPdisconnect(bool /*wipe*/ = false) { _running = false; return true; }
+    bool softAPdisconnect(bool /*wipe*/ = false) {
+        _running = false;
+        return true;
+    }
     bool begin(const char* /*ssid*/, const char* /*pass*/ = nullptr) { return true; }
     void disconnect(bool /*wipe*/ = false) {}
     IPAddress localIP() const { return IPAddress(192, 168, 4, 1); }
@@ -551,11 +561,12 @@ namespace phm::test {
 
 class SpiBus {
 public:
-    void begin(int /*sck*/ = -1, int /*miso*/ = -1, int /*mosi*/ = -1, int /*ss*/ = -1) {
-        _initialised = true;
-    }
+    void begin(int /*sck*/ = -1, int /*miso*/ = -1, int /*mosi*/ = -1, int /*ss*/ = -1) { _initialised = true; }
     void end() { _initialised = false; }
-    uint8_t transfer(uint8_t v) { _last_xfer = v; return v; }
+    uint8_t transfer(uint8_t v) {
+        _last_xfer = v;
+        return v;
+    }
     bool initialised() const { return _initialised; }
     uint8_t lastTransfer() const { return _last_xfer; }
 
@@ -563,6 +574,7 @@ public:
         static SpiBus b;
         return b;
     }
+
 private:
     bool _initialised = false;
     uint8_t _last_xfer = 0;
@@ -574,14 +586,18 @@ public:
     void end() { _initialised = false; }
     void beginTransmission(uint8_t /*addr*/) { _tx.clear(); }
     uint8_t endTransmission(bool /*stop*/ = true) { return 0; }
-    size_t write(uint8_t v) { _tx.push_back(v); return 1; }
+    size_t write(uint8_t v) {
+        _tx.push_back(v);
+        return 1;
+    }
     size_t write(const uint8_t* buf, size_t n) {
         _tx.insert(_tx.end(), buf, buf + n);
         return n;
     }
     int available() { return static_cast<int>(_rx.size()); }
     int read() {
-        if (_rx.empty()) return -1;
+        if (_rx.empty())
+            return -1;
         int v = _rx.front();
         _rx.erase(_rx.begin());
         return v;
@@ -594,6 +610,7 @@ public:
         static TwoWire w;
         return w;
     }
+
 private:
     bool _initialised = false;
     std::vector<uint8_t> _tx;
@@ -602,7 +619,7 @@ private:
 
 }  // namespace phm::test
 
-inline phm::test::SpiBus&  SPI  = phm::test::SpiBus::instance();
+inline phm::test::SpiBus& SPI = phm::test::SpiBus::instance();
 inline phm::test::TwoWire& Wire = phm::test::TwoWire::instance();
 
 // ---------------------------------------------------------------------------

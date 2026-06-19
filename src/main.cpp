@@ -13,9 +13,6 @@
  * @date 2026
  */
 
-#include <Arduino.h>
-#include <esp_task_wdt.h>
-
 #include "core/Config.h"
 #include "core/Module.h"
 #include "core/PhantomRF.h"
@@ -27,6 +24,9 @@
 #include "hal/Storage.h"
 #include "utils/ChannelMath.h"
 #include "utils/Logger.h"
+
+#include <Arduino.h>
+#include <esp_task_wdt.h>
 
 namespace phm {
 

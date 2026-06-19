@@ -24,10 +24,10 @@
  */
 #pragma once
 
+#include "core/Module.h"
+
 #include <stddef.h>
 #include <stdint.h>
-
-#include "core/Module.h"
 
 namespace phm::modules {
 
@@ -39,10 +39,9 @@ namespace phm::modules {
  */
 class WifiAttack : public ::phm::IModule {
 public:
-    static constexpr uint8_t  MODULE_ID   = 0x03;
+    static constexpr uint8_t MODULE_ID = 0x03;
     static constexpr const char* MODULE_NAME = "wifi-attack";
-    static constexpr const char* MODULE_DESC =
-        "WiFi deauth, disassoc, beacon flood, probe flood";
+    static constexpr const char* MODULE_DESC = "WiFi deauth, disassoc, beacon flood, probe flood";
 
     uint8_t id() const override { return MODULE_ID; }
     const char* name() const override { return MODULE_NAME; }
@@ -53,19 +52,19 @@ public:
     void teardown() override;
 
     enum class Target : uint8_t {
-        Deauth       = 0,
-        Disassoc     = 1,
-        BeaconFlood  = 2,
-        ProbeFlood   = 3,
+        Deauth = 0,
+        Disassoc = 1,
+        BeaconFlood = 2,
+        ProbeFlood = 3,
     };
 
     struct AttackConfig {
         Target target = Target::Deauth;
-        uint8_t wifiChannel = 6;     ///< 1..13
+        uint8_t wifiChannel = 6;  ///< 1..13
         bool targetAllChannels = true;
-        uint8_t targetBssid[6] = {0};  ///< zero = broadcast
-        uint8_t targetClient[6] = {0}; ///< zero = broadcast
-        uint16_t ratePerSec = 50;     ///< frames per second
+        uint8_t targetBssid[6] = {0};   ///< zero = broadcast
+        uint8_t targetClient[6] = {0};  ///< zero = broadcast
+        uint16_t ratePerSec = 50;       ///< frames per second
     };
 
     bool startAttack(const AttackConfig& cfg);
@@ -86,14 +85,11 @@ private:
     static void taskEntry(void* arg);
 
     // Frame builders
-    size_t buildDeauthFrame(uint8_t* out, size_t maxLen,
-                            const uint8_t* bssid, const uint8_t* client,
-                            bool disassoc, uint16_t reason);
-    size_t buildBeaconFrame(uint8_t* out, size_t maxLen,
-                            const uint8_t* bssid, const char* ssid,
-                            uint8_t channel, uint16_t seq);
-    size_t buildProbeReqFrame(uint8_t* out, size_t maxLen,
-                              const uint8_t* src, const char* ssid);
+    size_t buildDeauthFrame(uint8_t* out, size_t maxLen, const uint8_t* bssid, const uint8_t* client, bool disassoc,
+                            uint16_t reason);
+    size_t buildBeaconFrame(uint8_t* out, size_t maxLen, const uint8_t* bssid, const char* ssid, uint8_t channel,
+                            uint16_t seq);
+    size_t buildProbeReqFrame(uint8_t* out, size_t maxLen, const uint8_t* src, const char* ssid);
     void randomMac(uint8_t* out);
     void randomSsid(char* out, size_t len);
 
@@ -101,12 +97,12 @@ private:
     void leaveRawMode();
 
     AttackConfig config_{};
-    bool         running_      = false;
-    bool         rawMode_      = false;
-    uint8_t      currentCh_    = 1;
-    void*        task_         = nullptr;  /// FreeRTOS task handle (void* to avoid header chain)
+    bool running_ = false;
+    bool rawMode_ = false;
+    uint8_t currentCh_ = 1;
+    void* task_ = nullptr;  /// FreeRTOS task handle (void* to avoid header chain)
 
-    uint32_t framesSent_   = 0;
+    uint32_t framesSent_ = 0;
     uint32_t framesFailed_ = 0;
 };
 

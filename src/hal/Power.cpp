@@ -12,27 +12,28 @@
  */
 #include "hal/Power.h"
 
-#include <Arduino.h>
-
 #include "core/Config.h"
 #include "core/State.h"
 #include "hal/Board.h"
 #include "utils/Logger.h"
 
+#include <Arduino.h>
+
 // Try to use the new ESP-IDF temperature sensor driver. It's available
 // on ESP32-S3, ESP32-S2, and ESP32-C3 but not on the classic ESP32.
-#if defined(ARDUINO_ARCH_ESP32) && (defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3))
-    #define PHM_HAS_TEMP_SENSOR 1
-    // arduino-esp32 v3 uses driver/temperature_sensor.h via the Arduino core
-    // but the exact path varies. Use Arduino's wrapper if available.
-    #if __has_include(<driver/temperature_sensor.h>)
-        #include "driver/temperature_sensor.h"
-    #else
-        #undef PHM_HAS_TEMP_SENSOR
-        #define PHM_HAS_TEMP_SENSOR 0
-    #endif
+#if defined(ARDUINO_ARCH_ESP32) &&                                                                                     \
+    (defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3))
+#define PHM_HAS_TEMP_SENSOR 1
+// arduino-esp32 v3 uses driver/temperature_sensor.h via the Arduino core
+// but the exact path varies. Use Arduino's wrapper if available.
+#if __has_include(<driver/temperature_sensor.h>)
+#include "driver/temperature_sensor.h"
 #else
-    #define PHM_HAS_TEMP_SENSOR 0
+#undef PHM_HAS_TEMP_SENSOR
+#define PHM_HAS_TEMP_SENSOR 0
+#endif
+#else
+#define PHM_HAS_TEMP_SENSOR 0
 #endif
 
 namespace phm::hal {
@@ -48,10 +49,10 @@ static constexpr uint32_t kSamplePeriodMs = 5000;
 // ADC reference voltage / scaling. The PhantomRF v1 schematic has a
 // 100k/100k divider on VBAT, so V_ADC = V_BAT / 2. ESP32 ADC reference
 // is 3.3 V over a 12-bit range.
-static constexpr float kAdcRefV       = 3.3f;
-static constexpr float kAdcMaxCounts  = 4095.0f;   // 12-bit
-static constexpr float kVbatDivider   = 0.5f;      // 1:1 divider
-static constexpr uint16_t kLowBatteryMv = 3300;    // warn below 3.3 V
+static constexpr float kAdcRefV = 3.3f;
+static constexpr float kAdcMaxCounts = 4095.0f;  // 12-bit
+static constexpr float kVbatDivider = 0.5f;      // 1:1 divider
+static constexpr uint16_t kLowBatteryMv = 3300;  // warn below 3.3 V
 
 // ---------------------------------------------------------------------------
 void Power::setup() {
@@ -68,16 +69,15 @@ void Power::setup() {
     }
 #endif
     // Prime the first reading
-    lastTempC_  = readTemperatureC();
+    lastTempC_ = readTemperatureC();
     lastVbatMv_ = readVbatMilliVolts();
     throttling_ = false;
-    shutdown_   = false;
+    shutdown_ = false;
 
     phm::g_state.internalTempC = lastTempC_;
-    phm::g_state.vbat_mV       = lastVbatMv_;
+    phm::g_state.vbat_mV = lastVbatMv_;
 
-    LOGD("power", "initial temp=%.1fC vbat=%umV",
-         static_cast<double>(lastTempC_), static_cast<unsigned>(lastVbatMv_));
+    LOGD("power", "initial temp=%.1fC vbat=%umV", static_cast<double>(lastTempC_), static_cast<unsigned>(lastVbatMv_));
 }
 
 // ---------------------------------------------------------------------------
@@ -88,22 +88,20 @@ void Power::update() {
     }
     lastUpdateMs_ = now;
 
-    lastTempC_  = readTemperatureC();
+    lastTempC_ = readTemperatureC();
     lastVbatMv_ = readVbatMilliVolts();
 
     phm::g_state.internalTempC = lastTempC_;
-    phm::g_state.vbat_mV       = lastVbatMv_;
+    phm::g_state.vbat_mV = lastVbatMv_;
 
     // ---- Thermal logic -------------------------------------------------
     if (lastTempC_ >= PHM_TEMP_CRITICAL_C) {
-        LOGE("power", "CRITICAL temperature %.1fC — emergency shutdown",
-             static_cast<double>(lastTempC_));
+        LOGE("power", "CRITICAL temperature %.1fC — emergency shutdown", static_cast<double>(lastTempC_));
         emergencyShutdown();
         shutdownReason_ = kReasonOverTemp;
     } else if (lastTempC_ >= PHM_TEMP_THROTTLE_C) {
         if (!throttling_) {
-            LOGW("power", "Throttling: temperature %.1fC >= %.1fC",
-                 static_cast<double>(lastTempC_),
+            LOGW("power", "Throttling: temperature %.1fC >= %.1fC", static_cast<double>(lastTempC_),
                  static_cast<double>(PHM_TEMP_THROTTLE_C));
         }
         throttling_ = true;
@@ -122,10 +120,9 @@ void Power::emergencyShutdown() {
     if (shutdown_) {
         return;  // already shutting down
     }
-    shutdown_      = true;
+    shutdown_ = true;
     phm::g_state.state = phm::State::Error;
-    LOGE("power", "Emergency shutdown requested (reason=%u)",
-         static_cast<unsigned>(shutdownReason_));
+    LOGE("power", "Emergency shutdown requested (reason=%u)", static_cast<unsigned>(shutdownReason_));
     // The caller (PhantomRF::loop or a dedicated task) is expected to:
     //   1. stop all attacks,
     //   2. flush NVS (g_storage.commit()),
@@ -170,8 +167,8 @@ uint16_t Power::readVbatMilliVolts() {
         acc += static_cast<uint32_t>(analogRead(pin));
     }
     const float avgCounts = static_cast<float>(acc) / static_cast<float>(PHM_VBAT_ADC_SAMPLES);
-    const float vAdc      = (avgCounts / kAdcMaxCounts) * kAdcRefV;
-    const float vBat      = vAdc / kVbatDivider;
+    const float vAdc = (avgCounts / kAdcMaxCounts) * kAdcRefV;
+    const float vBat = vAdc / kVbatDivider;
     return static_cast<uint16_t>(vBat * 1000.0f);
 }
 

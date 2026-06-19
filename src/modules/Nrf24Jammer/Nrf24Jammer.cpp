@@ -23,13 +23,6 @@
  */
 #include "modules/Nrf24Jammer/Nrf24Jammer.h"
 
-#include <string.h>
-
-#include <Arduino.h>
-#include <esp_random.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-
 #include "core/EventBus.h"
 #include "core/State.h"
 #include "hal/Board.h"
@@ -37,6 +30,12 @@
 #include "hal/Storage.h"
 #include "utils/ChannelMath.h"
 #include "utils/Logger.h"
+
+#include <Arduino.h>
+#include <esp_random.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <string.h>
 
 namespace phm::modules {
 
@@ -46,18 +45,16 @@ namespace phm::modules {
 Nrf24Jammer g_nrf24Jammer;
 
 // From W0rthlessS0ul nRF24_jammer config.h:39-41
-const uint8_t Nrf24Jammer::BT_CHANNELS[21] = {
-    32, 34, 46, 48, 50, 52,  0,  1,  2,  4,  6,
-     8, 22, 24, 26, 28, 30, 74, 76, 78, 80
-};
-const uint8_t Nrf24Jammer::BLE_ADV_CHANNELS[3] = { 2, 26, 80 };
+const uint8_t Nrf24Jammer::BT_CHANNELS[21] = {32, 34, 46, 48, 50, 52, 0,  1,  2,  4, 6,
+                                              8,  22, 24, 26, 28, 30, 74, 76, 78, 80};
+const uint8_t Nrf24Jammer::BLE_ADV_CHANNELS[3] = {2, 26, 80};
 
 static constexpr const char* kTag = "nrf24";
-static constexpr UBaseType_t kTaskPrio   = 3;
-static constexpr uint32_t    kTaskStack  = 4096;
-static constexpr BaseType_t  kTaskCore   = 0;
-static constexpr uint8_t     kMaxRadios  = 5;
-static constexpr uint32_t    kHopDelayUs = 1300;  ///< ~1.3 ms PLL lock
+static constexpr UBaseType_t kTaskPrio = 3;
+static constexpr uint32_t kTaskStack = 4096;
+static constexpr BaseType_t kTaskCore = 0;
+static constexpr uint8_t kMaxRadios = 5;
+static constexpr uint32_t kHopDelayUs = 1300;  ///< ~1.3 ms PLL lock
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -72,8 +69,10 @@ void Nrf24Jammer::setup() {
     if (!hal::g_storage.getInt("nrf24.count", count)) {
         count = 1;
     }
-    if (count < 1)  count = 1;
-    if (count > kMaxRadios) count = kMaxRadios;
+    if (count < 1)
+        count = 1;
+    if (count > kMaxRadios)
+        count = kMaxRadios;
     LOGI(kTag, "configured nRF24 modules: %d", static_cast<int>(count));
 }
 
@@ -106,15 +105,8 @@ bool Nrf24Jammer::startAttack(const AttackConfig& cfg) {
     running_ = true;
     currentChannel_ = 0;
 
-    const BaseType_t ok = xTaskCreatePinnedToCore(
-        &Nrf24Jammer::taskEntry,
-        "nrf24jam",
-        kTaskStack,
-        this,
-        kTaskPrio,
-        &task_,
-        kTaskCore
-    );
+    const BaseType_t ok =
+        xTaskCreatePinnedToCore(&Nrf24Jammer::taskEntry, "nrf24jam", kTaskStack, this, kTaskPrio, &task_, kTaskCore);
     if (ok != pdPASS || task_ == nullptr) {
         running_ = false;
         task_ = nullptr;
@@ -122,23 +114,21 @@ bool Nrf24Jammer::startAttack(const AttackConfig& cfg) {
         return false;
     }
 
-    g_state.state        = State::Running;
+    g_state.state = State::Running;
     g_state.currentModuleId = MODULE_ID;
 
     {
         Event ev;
-        ev.type       = EventType::AttackStarted;
-        ev.timestamp  = millis();
-        ev.sourceId   = MODULE_ID;
-        ev.data       = nullptr;
-        ev.dataLen    = 0;
+        ev.type = EventType::AttackStarted;
+        ev.timestamp = millis();
+        ev.sourceId = MODULE_ID;
+        ev.data = nullptr;
+        ev.dataLen = 0;
         g_events.post(ev);
     }
 
-    LOGI(kTag, "attack started: target=%u method=%u sweep=%u",
-         static_cast<unsigned>(cfg.target),
-         static_cast<unsigned>(cfg.method),
-         static_cast<unsigned>(cfg.sweep));
+    LOGI(kTag, "attack started: target=%u method=%u sweep=%u", static_cast<unsigned>(cfg.target),
+         static_cast<unsigned>(cfg.method), static_cast<unsigned>(cfg.sweep));
     return true;
 }
 
@@ -167,9 +157,9 @@ void Nrf24Jammer::stopAttack() {
 
     {
         Event ev;
-        ev.type      = EventType::AttackStopped;
+        ev.type = EventType::AttackStopped;
         ev.timestamp = millis();
-        ev.sourceId  = MODULE_ID;
+        ev.sourceId = MODULE_ID;
         g_events.post(ev);
     }
     LOGI(kTag, "attack stopped");
@@ -200,13 +190,13 @@ void Nrf24Jammer::workerThread() {
 
     while (running_) {
         switch (config_.target) {
-            case Target::Bluetooth: jamBluetooth(); break;
-            case Target::BleAdv:    jamBleAdv();    break;
-            case Target::BleData:   jamBleData();   break;
-            case Target::Drone:     jamDrone();     break;
-            case Target::Wifi:      jamWifi();      break;
-            case Target::Zigbee:    jamZigbee();    break;
-            case Target::Misc:      jamMisc();      break;
+        case Target::Bluetooth: jamBluetooth(); break;
+        case Target::BleAdv: jamBleAdv(); break;
+        case Target::BleData: jamBleData(); break;
+        case Target::Drone: jamDrone(); break;
+        case Target::Wifi: jamWifi(); break;
+        case Target::Zigbee: jamZigbee(); break;
+        case Target::Misc: jamMisc(); break;
         }
         // Yield to the scheduler so a stop request is seen promptly.
         vTaskDelay(pdMS_TO_TICKS(1));
@@ -221,29 +211,32 @@ void Nrf24Jammer::workerThread() {
 // ---------------------------------------------------------------------------
 void Nrf24Jammer::jamBluetooth() {
     switch (config_.method) {
-        case Method::List: {
-            for (uint8_t ch : BT_CHANNELS) {
-                if (!running_) return;
-                postProgress(ch);
-                vTaskDelay(pdMS_TO_TICKS(0));  // yield
-            }
-            break;
+    case Method::List: {
+        for (uint8_t ch : BT_CHANNELS) {
+            if (!running_)
+                return;
+            postProgress(ch);
+            vTaskDelay(pdMS_TO_TICKS(0));  // yield
         }
-        case Method::Random: {
-            const uint8_t ch = static_cast<uint8_t>(esp_random() % 80);
-            if (!running_) return;
+        break;
+    }
+    case Method::Random: {
+        const uint8_t ch = static_cast<uint8_t>(esp_random() % 80);
+        if (!running_)
+            return;
+        postProgress(ch);
+        vTaskDelay(pdMS_TO_TICKS(0));
+        break;
+    }
+    case Method::BruteForce: {
+        for (uint8_t ch = 0; ch < 80; ++ch) {
+            if (!running_)
+                return;
             postProgress(ch);
             vTaskDelay(pdMS_TO_TICKS(0));
-            break;
         }
-        case Method::BruteForce: {
-            for (uint8_t ch = 0; ch < 80; ++ch) {
-                if (!running_) return;
-                postProgress(ch);
-                vTaskDelay(pdMS_TO_TICKS(0));
-            }
-            break;
-        }
+        break;
+    }
     }
 }
 
@@ -252,7 +245,8 @@ void Nrf24Jammer::jamBleAdv() {
     // for a few ms each. (The "NOACK" part is achieved by the constant
     // carrier — there's no per-packet handshake to disable here.)
     for (uint8_t ch : BLE_ADV_CHANNELS) {
-        if (!running_) return;
+        if (!running_)
+            return;
         postProgress(ch);
         delayMicroseconds(kHopDelayUs);
     }
@@ -268,28 +262,29 @@ void Nrf24Jammer::jamBleData() {
 
 void Nrf24Jammer::jamDrone() {
     switch (config_.method) {
-        case Method::BruteForce: {
-            for (uint8_t ch = 0; ch <= 125 && running_; ++ch) {
-                postProgress(ch);
-                delayMicroseconds(kHopDelayUs);
-            }
-            break;
-        }
-        case Method::Random: {
-            const uint8_t ch = static_cast<uint8_t>(esp_random() % 126);
-            if (!running_) return;
+    case Method::BruteForce: {
+        for (uint8_t ch = 0; ch <= 125 && running_; ++ch) {
             postProgress(ch);
-            vTaskDelay(pdMS_TO_TICKS(0));
-            break;
+            delayMicroseconds(kHopDelayUs);
         }
-        case Method::List: {
-            // No defined list for drones — fall back to full sweep
-            for (uint8_t ch = 0; ch <= 125 && running_; ++ch) {
-                postProgress(ch);
-                delayMicroseconds(kHopDelayUs);
-            }
-            break;
+        break;
+    }
+    case Method::Random: {
+        const uint8_t ch = static_cast<uint8_t>(esp_random() % 126);
+        if (!running_)
+            return;
+        postProgress(ch);
+        vTaskDelay(pdMS_TO_TICKS(0));
+        break;
+    }
+    case Method::List: {
+        // No defined list for drones — fall back to full sweep
+        for (uint8_t ch = 0; ch <= 125 && running_; ++ch) {
+            postProgress(ch);
+            delayMicroseconds(kHopDelayUs);
         }
+        break;
+    }
     }
 }
 
@@ -318,7 +313,7 @@ void Nrf24Jammer::jamZigbee() {
 
 void Nrf24Jammer::jamMisc() {
     const uint8_t start = config_.miscStartCh;
-    const uint8_t stop  = config_.miscStopCh;
+    const uint8_t stop = config_.miscStopCh;
     for (uint8_t ch = start; ch <= stop && running_; ++ch) {
         postProgress(ch);
         delayMicroseconds(kHopDelayUs);
@@ -333,13 +328,13 @@ void Nrf24Jammer::postProgress(uint8_t channel) {
 
     // Broadcast a small payload {channel}. The web UI / OLED menu can
     // show "now jamming ch 42" without re-querying.
-    const uint8_t payload[1] = { channel };
+    const uint8_t payload[1] = {channel};
     Event ev;
-    ev.type      = EventType::AttackProgress;
+    ev.type = EventType::AttackProgress;
     ev.timestamp = millis();
-    ev.sourceId  = MODULE_ID;
-    ev.dataLen   = sizeof(payload);
-    ev.data      = const_cast<uint8_t*>(payload);  // post() copies it
+    ev.sourceId = MODULE_ID;
+    ev.dataLen = sizeof(payload);
+    ev.data = const_cast<uint8_t*>(payload);  // post() copies it
     g_events.post(ev);
 }
 

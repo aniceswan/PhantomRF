@@ -11,11 +11,12 @@
  */
 #include "core/EventBus.h"
 
-#include <new>
-#include <string.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+
+#include <new>
+
+#include <string.h>
 
 namespace phm {
 

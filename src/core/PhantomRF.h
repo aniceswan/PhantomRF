@@ -16,11 +16,11 @@
  */
 #pragma once
 
-#include <stdint.h>
+#include "core/Module.h"
 
 #include <vector>
 
-#include "core/Module.h"
+#include <stdint.h>
 
 namespace phm {
 

@@ -11,33 +11,26 @@
  * @date 2026
  */
 #include "ui/oled/OledMenu.h"
-#include <Adafruit_SSD1306.h>
-#include "hal/Storage.h"
-#include "hal/Buttons.h"
+
 #include "hal/Board.h"
-#include "hal/Power.h"
+#include "hal/Buttons.h"
 #include "hal/Led.h"
-#include "modules/Nrf24Jammer/Nrf24Jammer.h"
-#include "modules/Cc1101Jammer/Cc1101Jammer.h"
-#include "modules/WifiAttack/WifiAttack.h"
+#include "hal/Power.h"
+#include "hal/Storage.h"
 #include "modules/BleAttack/BleAttack.h"
+#include "modules/Cc1101Jammer/Cc1101Jammer.h"
+#include "modules/Nrf24Jammer/Nrf24Jammer.h"
 #include "modules/Spectrum/Spectrum.h"
+#include "modules/WifiAttack/WifiAttack.h"
 #include "utils/Logger.h"
 
-using phm::hal::g_storage;
-using phm::hal::g_buttons;
-using phm::hal::g_board;
-using phm::hal::g_power;
-using phm::hal::g_led;
-
-#include <Arduino.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#include <cstring>
-#include <cstdio>
-#include <algorithm>
+using phm::hal::g_board;
+using phm::hal::g_buttons;
+using phm::hal::g_led;
+using phm::hal::g_power;
+using phm::hal::g_storage;
 
 #include "core/Config.h"
 #include "core/EventBus.h"
@@ -46,9 +39,17 @@ using phm::hal::g_led;
 #include "hal/Board.h"
 #include "hal/Buttons.h"
 #include "hal/Storage.h"
+#include "ui/cli/Console.h"
 #include "utils/Logger.h"
 
-#include "ui/cli/Console.h"
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Arduino.h>
+#include <Wire.h>
 
 namespace phm::ui {
 
@@ -65,13 +66,10 @@ struct MenuItem {
     OledMenu::Screen screen;
 };
 static const MenuItem kMainMenu[] = {
-    { "BT Jam",        OledMenu::Screen::BluetoothJam   },
-    { "WiFi Attack",   OledMenu::Screen::WifiAttack     },
-    { "BLE Attack",    OledMenu::Screen::BleAttack      },
-    { "2.4 GHz Jam",   OledMenu::Screen::Spectrum2_4GHz },
-    { "Sub-GHz Jam",   OledMenu::Screen::SubGhzJam      },
-    { "Spectrum",      OledMenu::Screen::SpectrumSubGHz },
-    { "Settings",      OledMenu::Screen::Settings       },
+    {"BT Jam", OledMenu::Screen::BluetoothJam},   {"WiFi Attack", OledMenu::Screen::WifiAttack},
+    {"BLE Attack", OledMenu::Screen::BleAttack},  {"2.4 GHz Jam", OledMenu::Screen::Spectrum2_4GHz},
+    {"Sub-GHz Jam", OledMenu::Screen::SubGhzJam}, {"Spectrum", OledMenu::Screen::SpectrumSubGHz},
+    {"Settings", OledMenu::Screen::Settings},
 };
 static constexpr uint8_t kMainMenuCount = sizeof(kMainMenu) / sizeof(kMainMenu[0]);
 
@@ -92,7 +90,8 @@ void OledMenu::setup() {
     // we re-read on demand from the Settings screen.
     int32_t cfg = 2;
     g_storage.getInt("buttons.config", cfg);
-    if (cfg < 0 || cfg > 2) cfg = 2;
+    if (cfg < 0 || cfg > 2)
+        cfg = 2;
     buttonConfig_ = static_cast<uint8_t>(cfg);
     g_buttons.setConfig(buttonConfig_);
 
@@ -102,9 +101,9 @@ void OledMenu::setup() {
     }
 
     // Splash screen
-    current_   = Screen::Splash;
+    current_ = Screen::Splash;
     splashEnd_ = millis() + kSplashMs;
-    dirty_     = true;
+    dirty_ = true;
     LOGI(kTag, "OLED ready (%d-button config)", buttonConfig_);
 }
 
@@ -137,24 +136,22 @@ void OledMenu::loop() {
     // ---- 2. Auto-progress the splash screen ---------------------------
     if (current_ == Screen::Splash && static_cast<int32_t>(millis() - splashEnd_) >= 0) {
         current_ = Screen::MainMenu;
-        dirty_   = true;
+        dirty_ = true;
     }
 
     // ---- 3. Clear the transient overlay -------------------------------
     if (overlayEnd_ != 0 && static_cast<int32_t>(millis() - overlayEnd_) >= 0) {
         overlayEnd_ = 0;
-        current_    = savedScreen_;
-        dirty_      = true;
+        current_ = savedScreen_;
+        dirty_ = true;
     }
 
     // ---- 4. Rate-limited redraw ---------------------------------------
-    const uint32_t interval = (current_ == Screen::Attack)
-        ? kActiveRefreshMs
-        : kIdleRefreshMs;
+    const uint32_t interval = (current_ == Screen::Attack) ? kActiveRefreshMs : kIdleRefreshMs;
 
     if (dirty_ || (millis() - lastDraw_) >= interval) {
         lastDraw_ = millis();
-        dirty_    = false;
+        dirty_ = false;
 
         display_->clearDisplay();
 
@@ -165,19 +162,19 @@ void OledMenu::loop() {
             centerText(overlayMsg_, 28);
         } else {
             switch (current_) {
-                case Screen::Splash:         drawSplash();         break;
-                case Screen::MainMenu:       drawMainMenu();       break;
-                case Screen::BluetoothJam:   drawBluetoothJam();   break;
-                case Screen::WifiAttack:     drawWifiAttack();     break;
-                case Screen::BleAttack:      drawBleAttack();      break;
-                case Screen::Spectrum2_4GHz: drawSpectrum2_4();    break;
-                case Screen::SpectrumSubGHz: drawSpectrumSub();    break;
-                case Screen::SubGhzJam:      drawSubGhzJam();      break;
-                case Screen::Settings:       drawSettings();       break;
-                case Screen::Files:          drawFiles();          break;
-                case Screen::Info:           drawInfo();           break;
-                case Screen::Attack:         drawAttack();         break;
-                case Screen::Error:          break; // unused
+            case Screen::Splash: drawSplash(); break;
+            case Screen::MainMenu: drawMainMenu(); break;
+            case Screen::BluetoothJam: drawBluetoothJam(); break;
+            case Screen::WifiAttack: drawWifiAttack(); break;
+            case Screen::BleAttack: drawBleAttack(); break;
+            case Screen::Spectrum2_4GHz: drawSpectrum2_4(); break;
+            case Screen::SpectrumSubGHz: drawSpectrumSub(); break;
+            case Screen::SubGhzJam: drawSubGhzJam(); break;
+            case Screen::Settings: drawSettings(); break;
+            case Screen::Files: drawFiles(); break;
+            case Screen::Info: drawInfo(); break;
+            case Screen::Attack: drawAttack(); break;
+            case Screen::Error: break;  // unused
             }
             drawStatusBar();
         }
@@ -190,14 +187,16 @@ void OledMenu::loop() {
 // Public mutators
 // ===========================================================================
 void OledMenu::setCurrentScreen(Screen s) {
-    if (current_ == s) return;
+    if (current_ == s)
+        return;
     current_ = s;
     menuIndex_ = 0;
     dirty_ = true;
 }
 
 void OledMenu::println(const char* text, uint8_t y) {
-    if (!isActive() || text == nullptr) return;
+    if (!isActive() || text == nullptr)
+        return;
     display_->setTextSize(1);
     display_->setTextColor(SSD1306_WHITE);
     display_->setCursor(0, y * 8);
@@ -206,7 +205,8 @@ void OledMenu::println(const char* text, uint8_t y) {
 }
 
 void OledMenu::showError(const char* msg) {
-    if (!isActive() || msg == nullptr) return;
+    if (!isActive() || msg == nullptr)
+        return;
     savedScreen_ = current_;
     std::strncpy(overlayMsg_, msg, sizeof(overlayMsg_) - 1);
     overlayMsg_[sizeof(overlayMsg_) - 1] = '\0';
@@ -216,7 +216,8 @@ void OledMenu::showError(const char* msg) {
 }
 
 void OledMenu::showInfo(const char* msg) {
-    if (!isActive() || msg == nullptr) return;
+    if (!isActive() || msg == nullptr)
+        return;
     savedScreen_ = current_;
     std::strncpy(overlayMsg_, msg, sizeof(overlayMsg_) - 1);
     overlayMsg_[sizeof(overlayMsg_) - 1] = '\0';
@@ -226,8 +227,10 @@ void OledMenu::showInfo(const char* msg) {
 }
 
 void OledMenu::showProgress(uint8_t pct) {
-    if (!isActive()) return;
-    if (pct > 100) pct = 100;
+    if (!isActive())
+        return;
+    if (pct > 100)
+        pct = 100;
     const int x = 0;
     const int y = kHeight - 8;
     const int w = kWidth;
@@ -290,7 +293,7 @@ void OledMenu::drawMainMenu() {
     // 6 items per page; we scroll if there are more
     constexpr uint8_t kPage = 6;
     const uint8_t pageStart = (menuIndex_ / kPage) * kPage;
-    const uint8_t pageEnd   = std::min<uint8_t>(pageStart + kPage, kMainMenuCount);
+    const uint8_t pageEnd = std::min<uint8_t>(pageStart + kPage, kMainMenuCount);
 
     int y = 10;
     for (uint8_t i = pageStart; i < pageEnd; ++i) {
@@ -403,8 +406,10 @@ void OledMenu::drawSettings() {
     display_->setCursor(0, 12);
     display_->print("AP: ");
     String s;
-    if (g_storage.getString("ap.ssid", s)) display_->print(s);
-    else                                    display_->print("(default)");
+    if (g_storage.getString("ap.ssid", s))
+        display_->print(s);
+    else
+        display_->print("(default)");
 
     display_->setCursor(0, 20);
     if (g_storage.getInt("buttons.config", v)) {
@@ -441,7 +446,8 @@ void OledMenu::drawFiles() {
     const auto names = g_storage.listDir("/recordings");
     int y = 10;
     for (const auto& n : names) {
-        if (y > kHeight - 12) break;
+        if (y > kHeight - 12)
+            break;
         display_->setCursor(0, y);
         display_->println(n);
         y += 9;
@@ -456,17 +462,23 @@ void OledMenu::drawInfo() {
     display_->setTextSize(1);
     char buf[24];
     std::snprintf(buf, sizeof(buf), "v%s", PHM_VERSION_STRING);
-    display_->setCursor(0, 0);   display_->print(PHM_NAME);
-    display_->setCursor(0, 10);  display_->print(buf);
-    display_->setCursor(0, 20);  display_->print(phm::hal::g_board.boardName());
+    display_->setCursor(0, 0);
+    display_->print(PHM_NAME);
+    display_->setCursor(0, 10);
+    display_->print(buf);
+    display_->setCursor(0, 20);
+    display_->print(phm::hal::g_board.boardName());
 
     formatUptime(buf, sizeof(buf));
-    display_->setCursor(0, 30);  display_->print(buf);
+    display_->setCursor(0, 30);
+    display_->print(buf);
 
     std::snprintf(buf, sizeof(buf), "Heap: %u", static_cast<unsigned>(ESP.getFreeHeap()));
-    display_->setCursor(0, 40);  display_->print(buf);
+    display_->setCursor(0, 40);
+    display_->print(buf);
     std::snprintf(buf, sizeof(buf), "Bat: %u mV", static_cast<unsigned>(g_state.vbat_mV));
-    display_->setCursor(0, 50);  display_->print(buf);
+    display_->setCursor(0, 50);
+    display_->print(buf);
 }
 
 void OledMenu::drawAttack() {
@@ -538,30 +550,40 @@ void OledMenu::drawMenuItem(uint8_t index, const char* text, bool selected) {
 // Input
 // ===========================================================================
 void OledMenu::handleButton(phm::hal::ButtonId id, bool pressed, bool longPress, bool doublePress) {
-    if (!pressed) return;
+    if (!pressed)
+        return;
 
     if (buttonConfig_ == 0) {
         // 1-button: short = next, long = select, double = back
         if (id == phm::hal::ButtonId::Ok) {
-            if (longPress)      onSelect();
-            else if (doublePress) onBack();
-            else                onNext();
+            if (longPress)
+                onSelect();
+            else if (doublePress)
+                onBack();
+            else
+                onNext();
         }
     } else if (buttonConfig_ == 1) {
         // 2-button: Next = next, OK short = select, OK long = back
         if (id == phm::hal::ButtonId::Next) {
             onNext();
         } else if (id == phm::hal::ButtonId::Ok) {
-            if (longPress) onBack();
-            else          onSelect();
+            if (longPress)
+                onBack();
+            else
+                onSelect();
         }
     } else {
         // 3-button: Prev / Next / OK (long OK = back)
-        if (id == phm::hal::ButtonId::Prev)      onPrev();
-        else if (id == phm::hal::ButtonId::Next) onNext();
+        if (id == phm::hal::ButtonId::Prev)
+            onPrev();
+        else if (id == phm::hal::ButtonId::Next)
+            onNext();
         else if (id == phm::hal::ButtonId::Ok) {
-            if (longPress) onBack();
-            else          onSelect();
+            if (longPress)
+                onBack();
+            else
+                onSelect();
         }
     }
     dirty_ = true;
@@ -582,13 +604,13 @@ void OledMenu::onSelect() {
     // For all submenus, OK starts the matching attack
     const char* cmd = nullptr;
     switch (current_) {
-        case Screen::BluetoothJam:   cmd = "attack bt";     break;
-        case Screen::WifiAttack:     cmd = "attack wifi";   break;
-        case Screen::BleAttack:      cmd = "attack ble";    break;
-        case Screen::Spectrum2_4GHz: cmd = "attack 2_4";    break;
-        case Screen::SubGhzJam:      cmd = "attack subghz"; break;
-        case Screen::SpectrumSubGHz: cmd = "attack spec";   break;
-        default: break;
+    case Screen::BluetoothJam: cmd = "attack bt"; break;
+    case Screen::WifiAttack: cmd = "attack wifi"; break;
+    case Screen::BleAttack: cmd = "attack ble"; break;
+    case Screen::Spectrum2_4GHz: cmd = "attack 2_4"; break;
+    case Screen::SubGhzJam: cmd = "attack subghz"; break;
+    case Screen::SpectrumSubGHz: cmd = "attack spec"; break;
+    default: break;
     }
     if (cmd != nullptr) {
         std::strncpy(attackName_, kMainMenu[menuIndex_].label, sizeof(attackName_) - 1);
@@ -596,9 +618,9 @@ void OledMenu::onSelect() {
         // The attack module will set attackChannel_/attackRssi_ via the
         // event bus; we just switch to the "running" screen.
         const String r = g_console.processLine(cmd);
-        current_   = Screen::Attack;
+        current_ = Screen::Attack;
         attackChannel_ = 0;
-        attackRssi_    = -100;
+        attackRssi_ = -100;
         showInfo(r.c_str());
     }
 }
@@ -653,7 +675,8 @@ void OledMenu::onPrev() {
 // Misc
 // ===========================================================================
 void OledMenu::centerText(const char* text, int y) {
-    if (text == nullptr) return;
+    if (text == nullptr)
+        return;
     // We assume the caller has set the text size before calling.
     // For the default size 1, each char is 6 px wide; for size 2, 12 px.
     // The drawSplash() caller sets size 2 explicitly; everything else
@@ -661,27 +684,28 @@ void OledMenu::centerText(const char* text, int y) {
     const int charW = 6;  // size 1
     const int w = std::strlen(text) * charW;
     int x = (kWidth - w) / 2;
-    if (x < 0) x = 0;
+    if (x < 0)
+        x = 0;
     display_->setCursor(x, y);
     display_->print(text);
 }
 
 void OledMenu::formatUptime(char* out, size_t len) {
     const uint32_t ms = millis();
-    const uint32_t s  = ms / 1000UL;
-    const uint32_t h  = s / 3600UL;
-    const uint32_t m  = (s / 60UL) % 60UL;
+    const uint32_t s = ms / 1000UL;
+    const uint32_t h = s / 3600UL;
+    const uint32_t m = (s / 60UL) % 60UL;
     const uint32_t ss = s % 60UL;
-    std::snprintf(out, len, "%lu:%02lu:%02lu",
-                  static_cast<unsigned long>(h),
-                  static_cast<unsigned long>(m),
+    std::snprintf(out, len, "%lu:%02lu:%02lu", static_cast<unsigned long>(h), static_cast<unsigned long>(m),
                   static_cast<unsigned long>(ss));
 }
 
 int OledMenu::rssiBars(int8_t rssi) {
     // Map -100..-40 dBm to 0..(kWidth-2)
-    if (rssi < -100) rssi = -100;
-    if (rssi >  -40) rssi =  -40;
+    if (rssi < -100)
+        rssi = -100;
+    if (rssi > -40)
+        rssi = -40;
     return ((rssi + 100) * (kWidth - 2)) / 60;
 }
 

@@ -17,13 +17,13 @@
  */
 #pragma once
 
-#include <stdint.h>
-
 #include "core/Module.h"
 
+#include <stdint.h>
+
 #ifdef ESP32
-    #include <freertos/FreeRTOS.h>
-    #include <freertos/task.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #endif
 
 namespace phm::modules {
@@ -39,10 +39,9 @@ namespace phm::modules {
  */
 class Nrf24Jammer : public ::phm::IModule {
 public:
-    static constexpr uint8_t  MODULE_ID   = 0x01;
+    static constexpr uint8_t MODULE_ID = 0x01;
     static constexpr const char* MODULE_NAME = "nrf24-jammer";
-    static constexpr const char* MODULE_DESC =
-        "2.4 GHz jammer using nRF24L01 modules";
+    static constexpr const char* MODULE_DESC = "2.4 GHz jammer using nRF24L01 modules";
 
     /// IModule: stable id used by the event bus and web API
     uint8_t id() const override { return MODULE_ID; }
@@ -63,34 +62,34 @@ public:
     /// What protocol/family are we jamming?
     enum class Target : uint8_t {
         Bluetooth = 0,  ///< BT classic AFH set (21 channels) + random + brute
-        BleAdv    = 1,  ///< BLE advertising (3 channels: 2, 26, 80)
-        BleData   = 2,  ///< BLE data channels (0..39 every other channel)
-        Drone     = 3,  ///< Full ISM sweep 0..125 (catches drone RC)
-        Wifi      = 4,  ///< WiFi overlap (nRF24 channels covering ch 1..14)
-        Zigbee    = 5,  ///< 802.15.4 overlap (nRF24 channels covering ch 11..26)
-        Misc      = 6,  ///< User-supplied channel range
+        BleAdv = 1,     ///< BLE advertising (3 channels: 2, 26, 80)
+        BleData = 2,    ///< BLE data channels (0..39 every other channel)
+        Drone = 3,      ///< Full ISM sweep 0..125 (catches drone RC)
+        Wifi = 4,       ///< WiFi overlap (nRF24 channels covering ch 1..14)
+        Zigbee = 5,     ///< 802.15.4 overlap (nRF24 channels covering ch 11..26)
+        Misc = 6,       ///< User-supplied channel range
     };
 
     /// How do we pick the next channel each iteration?
     enum class Method : uint8_t {
-        List       = 0,  ///< Walk a predefined list (BT AFH, BLE adv, etc.)
-        Random     = 1,  ///< Pick a random channel per loop per radio
+        List = 0,        ///< Walk a predefined list (BT AFH, BLE adv, etc.)
+        Random = 1,      ///< Pick a random channel per loop per radio
         BruteForce = 2,  ///< Step sequentially through the full range
     };
 
     /// How do multiple nRF24s cooperate?
     enum class SweepMode : uint8_t {
-        Together  = 0,  ///< All radios on the same channel (max localised punch)
-        Separate  = 1,  ///< Round-robin `i = ch % radioCount` (max coverage)
+        Together = 0,  ///< All radios on the same channel (max localised punch)
+        Separate = 1,  ///< Round-robin `i = ch % radioCount` (max coverage)
     };
 
     /// User-tweakable parameters for `startAttack()`
     struct AttackConfig {
-        Target    target       = Target::Bluetooth;  ///< What to jam
-        Method    method       = Method::List;       ///< Channel-selection strategy
-        SweepMode sweep        = SweepMode::Separate;///< Multi-radio cooperation
-        uint8_t   miscStartCh  = 0;                   ///< `Misc` only
-        uint8_t   miscStopCh   = 80;                  ///< `Misc` only, inclusive
+        Target target = Target::Bluetooth;      ///< What to jam
+        Method method = Method::List;           ///< Channel-selection strategy
+        SweepMode sweep = SweepMode::Separate;  ///< Multi-radio cooperation
+        uint8_t miscStartCh = 0;                ///< `Misc` only
+        uint8_t miscStopCh = 80;                ///< `Misc` only, inclusive
     };
 
     // ---- Public API ------------------------------------------------------
@@ -117,14 +116,14 @@ public:
 
 private:
     // ---- Worker entry points (per target) --------------------------------
-    void workerThread();    ///< Top-level loop, dispatches to a jam*()
-    void jamBluetooth();    ///< `Target::Bluetooth`
-    void jamBleAdv();       ///< `Target::BleAdv`
-    void jamBleData();      ///< `Target::BleData`
-    void jamDrone();        ///< `Target::Drone`
-    void jamWifi();         ///< `Target::Wifi`
-    void jamZigbee();       ///< `Target::Zigbee`
-    void jamMisc();         ///< `Target::Misc`
+    void workerThread();  ///< Top-level loop, dispatches to a jam*()
+    void jamBluetooth();  ///< `Target::Bluetooth`
+    void jamBleAdv();     ///< `Target::BleAdv`
+    void jamBleData();    ///< `Target::BleData`
+    void jamDrone();      ///< `Target::Drone`
+    void jamWifi();       ///< `Target::Wifi`
+    void jamZigbee();     ///< `Target::Zigbee`
+    void jamMisc();       ///< `Target::Misc`
 
     // ---- Helpers ---------------------------------------------------------
     /// Post an `AttackProgress` event with the channel currently being jammed
@@ -135,8 +134,8 @@ private:
 
     // ---- State -----------------------------------------------------------
     AttackConfig config_{};
-    bool         running_         = false;  ///< Worker loop guard
-    uint8_t      currentChannel_  = 0;      ///< Last channel posted as progress
+    bool running_ = false;        ///< Worker loop guard
+    uint8_t currentChannel_ = 0;  ///< Last channel posted as progress
 
     TaskHandle_t task_ = nullptr;  ///< Owned by `startAttack()` / `stopAttack()`
 

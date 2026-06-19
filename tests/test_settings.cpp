@@ -24,6 +24,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+
 #include <unity.h>
 
 // If the production Settings header is present, use it directly.
@@ -44,23 +45,15 @@ public:
     }
     void end() { _prefs.end(); }
 
-    bool setString(const char* key, const char* value) {
-        return _prefs.putString(key, value ? value : "") > 0;
-    }
+    bool setString(const char* key, const char* value) { return _prefs.putString(key, value ? value : "") > 0; }
     std::string getString(const char* key, const char* defaultValue = "") const {
         return _prefs.getString(key, defaultValue);
     }
 
-    bool setInt(const char* key, int32_t value) {
-        return _prefs.putInt(key, value) > 0;
-    }
-    int32_t getInt(const char* key, int32_t defaultValue = 0) const {
-        return _prefs.getInt(key, defaultValue);
-    }
+    bool setInt(const char* key, int32_t value) { return _prefs.putInt(key, value) > 0; }
+    int32_t getInt(const char* key, int32_t defaultValue = 0) const { return _prefs.getInt(key, defaultValue); }
 
-    bool setBytes(const char* key, const uint8_t* buf, size_t len) {
-        return _prefs.putBytes(key, buf, len) == len;
-    }
+    bool setBytes(const char* key, const uint8_t* buf, size_t len) { return _prefs.putBytes(key, buf, len) == len; }
     std::vector<uint8_t> getBytes(const char* key, size_t expected) const {
         std::vector<uint8_t> out(expected, 0u);
         const size_t n = _prefs.getBytes(key, out.data(), expected);
@@ -119,8 +112,7 @@ void testSetGetString_overwrite(void) {
 
 void testSetGetString_default_when_missing(void) {
     auto& s = settings::instance();
-    TEST_ASSERT_EQUAL_STRING("default-value",
-                            s.getString("missing-key", "default-value").c_str());
+    TEST_ASSERT_EQUAL_STRING("default-value", s.getString("missing-key", "default-value").c_str());
 }
 
 void testSetGetString_empty_string_is_valid(void) {
@@ -209,7 +201,8 @@ void testSetGetBytes_preserves_binary(void) {
     // Every byte value, including 0x00 and 0xFF.
     auto& s = settings::instance();
     uint8_t in[256];
-    for (int i = 0; i < 256; ++i) in[i] = static_cast<uint8_t>(i);
+    for (int i = 0; i < 256; ++i)
+        in[i] = static_cast<uint8_t>(i);
     TEST_ASSERT_TRUE(s.setBytes("allbytes", in, sizeof(in)));
     auto out = s.getBytes("allbytes", sizeof(in));
     TEST_ASSERT_EQUAL_size_t(sizeof(in), out.size());
@@ -227,8 +220,7 @@ void testRemoveKey_get_returns_default(void) {
     s.setString("k", "value");
     TEST_ASSERT_EQUAL_STRING("value", s.getString("k").c_str());
     TEST_ASSERT_TRUE(s.removeKey("k"));
-    TEST_ASSERT_EQUAL_STRING("default",
-                            s.getString("k", "default").c_str());
+    TEST_ASSERT_EQUAL_STRING("default", s.getString("k", "default").c_str());
 }
 
 void testRemoveKey_idempotent(void) {
@@ -269,10 +261,10 @@ void testFactoryReset_restores_all_defaults(void) {
     auto& s = settings::instance();
 
     // Populate everything.
-    s.setString("ssid",      "PhantomRF");
-    s.setString("password",  "secret");
-    s.setInt("channel",     7);
-    s.setInt("pa_level",    3);
+    s.setString("ssid", "PhantomRF");
+    s.setString("password", "secret");
+    s.setInt("channel", 7);
+    s.setInt("pa_level", 3);
     const uint8_t mac[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
     s.setBytes("ap_mac", mac, sizeof(mac));
 
@@ -282,7 +274,7 @@ void testFactoryReset_restores_all_defaults(void) {
     // return the supplied default.
     TEST_ASSERT_EQUAL_STRING("default-ssid", s.getString("ssid", "default-ssid").c_str());
     TEST_ASSERT_EQUAL_STRING("default-pass", s.getString("password", "default-pass").c_str());
-    TEST_ASSERT_EQUAL_INT32(0,  s.getInt("channel",  0));
+    TEST_ASSERT_EQUAL_INT32(0, s.getInt("channel", 0));
     TEST_ASSERT_EQUAL_INT32(-1, s.getInt("pa_level", -1));
     auto mac_out = s.getBytes("ap_mac", sizeof(mac));
     TEST_ASSERT_EQUAL_size_t(0u, mac_out.size());

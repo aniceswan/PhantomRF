@@ -10,8 +10,6 @@
  */
 #include "core/PhantomRF.h"
 
-#include <Arduino.h>
-
 #include "core/EventBus.h"
 #include "core/State.h"
 #include "hal/Board.h"
@@ -20,6 +18,8 @@
 #include "hal/Power.h"
 #include "hal/Storage.h"
 #include "utils/Logger.h"
+
+#include <Arduino.h>
 
 namespace phm {
 
@@ -56,10 +56,10 @@ void PhantomRF::setup() {
     // ---- Platform bring-up (order matters) -------------------------------
     g_state.bootTime = millis();
 
-    hal::g_board.setup();              // configure pins
-    util::g_logger.setup();            // logging to Serial
-    hal::g_storage.setup();            // NVS + LittleFS
-    g_events.init();                   // FreeRTOS event queue
+    hal::g_board.setup();    // configure pins
+    util::g_logger.setup();  // logging to Serial
+    hal::g_storage.setup();  // NVS + LittleFS
+    g_events.init();         // FreeRTOS event queue
 
     // ---- Power / health ---------------------------------------------------
     hal::g_power.setup();

@@ -15,13 +15,13 @@
  */
 #pragma once
 
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "core/Config.h"
 
 #include <array>
 
-#include "core/Config.h"
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
 
 namespace phm::util {
 
@@ -33,10 +33,10 @@ namespace phm::util {
  */
 enum class LogLevel : uint8_t {
     Verbose = 0,  ///< Chatty debug output
-    Debug   = 1,  ///< Diagnostic info useful during development
-    Info    = 2,  ///< Normal operational messages
-    Warn    = 3,  ///< Something unexpected, recoverable
-    Error   = 4,  ///< Something broke, action is needed
+    Debug = 1,    ///< Diagnostic info useful during development
+    Info = 2,     ///< Normal operational messages
+    Warn = 3,     ///< Something unexpected, recoverable
+    Error = 4,    ///< Something broke, action is needed
 };
 
 /**
@@ -46,10 +46,10 @@ enum class LogLevel : uint8_t {
  * without copy overhead.
  */
 struct LogEntry {
-    uint32_t timestamp;                          ///< millis() when logged
-    LogLevel level;                              ///< Severity
-    char     tag[PHM_LOG_TAG_MAX_LEN];           ///< Module tag, NUL-terminated
-    char     message[PHM_LOG_MSG_MAX_LEN];       ///< Formatted message, NUL-terminated
+    uint32_t timestamp;                 ///< millis() when logged
+    LogLevel level;                     ///< Severity
+    char tag[PHM_LOG_TAG_MAX_LEN];      ///< Module tag, NUL-terminated
+    char message[PHM_LOG_MSG_MAX_LEN];  ///< Formatted message, NUL-terminated
 };
 
 /**
@@ -95,8 +95,8 @@ private:
 
     LogLevel minLevel_ = LogLevel::Info;
     std::array<LogEntry, PHM_LOG_RING_SIZE> ring_{};
-    size_t   writeIndex_ = 0;
-    size_t   count_      = 0;
+    size_t writeIndex_ = 0;
+    size_t count_ = 0;
 };
 
 /// Singleton instance, defined in Logger.cpp
@@ -109,7 +109,7 @@ extern Logger g_logger;
 // Example: LOGI("nrf24", "channel set to %u", ch);
 // ---------------------------------------------------------------------------
 #define LOGV(tag, ...) phm::util::g_logger.logf(phm::util::LogLevel::Verbose, tag, __VA_ARGS__)
-#define LOGD(tag, ...) phm::util::g_logger.logf(phm::util::LogLevel::Debug,   tag, __VA_ARGS__)
-#define LOGI(tag, ...) phm::util::g_logger.logf(phm::util::LogLevel::Info,    tag, __VA_ARGS__)
-#define LOGW(tag, ...) phm::util::g_logger.logf(phm::util::LogLevel::Warn,    tag, __VA_ARGS__)
-#define LOGE(tag, ...) phm::util::g_logger.logf(phm::util::LogLevel::Error,   tag, __VA_ARGS__)
+#define LOGD(tag, ...) phm::util::g_logger.logf(phm::util::LogLevel::Debug, tag, __VA_ARGS__)
+#define LOGI(tag, ...) phm::util::g_logger.logf(phm::util::LogLevel::Info, tag, __VA_ARGS__)
+#define LOGW(tag, ...) phm::util::g_logger.logf(phm::util::LogLevel::Warn, tag, __VA_ARGS__)
+#define LOGE(tag, ...) phm::util::g_logger.logf(phm::util::LogLevel::Error, tag, __VA_ARGS__)
