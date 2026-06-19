@@ -98,7 +98,8 @@ $RECYCLE.BIN/
 # -----------------------------------------------------------------------------
 .cache/
 .clangd/
-.clang-tidy
+# .clang-tidy is project config and is tracked; ignore only the
+# user-specific override (.clang-format.local further down).
 compile_commands.json
 .ccache/
 CTestTestfile.cmake

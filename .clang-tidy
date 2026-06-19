@@ -1,0 +1,148 @@
+# =============================================================================
+#  PhantomRF — clang-tidy configuration
+# ----------------------------------------------------------------------------
+#  Consumed by `pio check` (which calls clang-tidy under the hood) and by
+#  the `tools/lint/run-clang-tidy.sh` developer script.
+#
+#  We start by disabling *every* check (`-*`) and then turn on the
+#  categories that make sense for an embedded C++ project. The intent is
+#  signal-to-noise: the categories below catch real bugs and modernise
+#  C++ without flooding the output with style nits.
+# =============================================================================
+
+---
+# Note: the `Checks: >` block below starts with `-*,` which itself
+# disables every check; the categories that follow re-enable the ones
+# we want. Don't add a separate `Checks: '-*'` here or clang-tidy will
+# complain about a duplicated mapping key.
+
+# --- categories we enable ---------------------------------------------------
+#
+#  bugprone-*       Definite-bug patterns (use-after-move, integer overflow,
+#                   dangling references, etc.). Cheap to run, very high value.
+#  cert-*           CERT C/C++ secure coding guidelines.
+#  cppcoreguidelines-*
+#                   Stroustrup / Sutter / Khlebnikov C++ Core Guidelines.
+#  modernize-*      C++17 idioms (override, nullptr, range-for, etc.).
+#  performance-*    Obvious inefficiencies (redundant copies, etc.).
+#  portability-*    Cross-platform issues (e.g. implicit long->int).
+#  readability-*    Readability, naming, magic numbers, etc.
+#  misc-*           clang-analyzer's catch-all ("throw in noexcept",
+#                   "undelegated constructor", etc.).
+#
+Checks: >
+  -*,
+  bugprone-*,
+  cert-*,
+  cppcoreguidelines-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  misc-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -bugprone-reserved-identifier,
+  -bugprone-assignment-in-if-condition,
+  -cert-dcl37-c,
+  -cert-dcl51-cpp,
+  -cert-err33-c,
+  -cert-msc24-c,
+  -cert-msc32-c,
+  -cert-msc33-c,
+  -cert-msc50-cpp,
+  -cert-msc51-cpp,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-avoid-non-const-global-variables,
+  -cppcoreguidelines-init-variables,
+  -cppcoreguidelines-narrowing-conversions,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-cstyle-cast,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-type-static-cast-downcast,
+  -cppcoreguidelines-pro-type-union-access,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-special-member-functions,
+  -readability-braces-around-statements,
+  -readability-else-after-return,
+  -readability-function-cognitive-complexity,
+  -readability-identifier-length,
+  -readability-implicit-bool-conversion,
+  -readability-magic-numbers,
+  -readability-named-parameter,
+  -readability-redundant-access-specifiers,
+  -readability-uppercase-literal-suffix,
+  -misc-no-recursion,
+  -misc-unused-parameters,
+  -modernize-concat-nested-namespaces,
+  -modernize-deprecated-headers,
+  -modernize-loop-convert,
+  -modernize-pass-by-value,
+  -modernize-replace-random-shuffle,
+  -modernize-return-braced-init-list,
+  -modernize-unary-static-assert,
+  -modernize-use-auto,
+  -modernize-use-bool-literals,
+  -modernize-use-default-member-init,
+  -modernize-use-equals-default,
+  -modernize-use-equals-delete,
+  -modernize-use-nodiscard,
+  -modernize-use-trailing-return-type,
+  -modernize-use-transparent-functors,
+  -performance-no-automatic-move,
+  -performance-no-int-to-ptr,
+  -performance-trivially-destructible,
+  -performance-unnecessary-value-param,
+  -portability-simd-intrinsics
+
+# Treat every warning as an error so the CI build fails on the first hit.
+# (We can flip this off locally with `--warnings-as-errors=''`.)
+WarningsAsErrors: ''
+
+# Limit header diagnostics to project headers; otherwise we drown in
+# system-header noise from the Arduino / ESP-IDF / NimBLE / RF24 libs.
+HeaderFilterRegex: 'src/.*'
+
+# Coloured diagnostics (clang-tidy ≥ 13).
+UseColor: true
+
+# Format the replacement suggestions in clang-tidy's output so they paste
+# cleanly into editors.
+FormatStyle: 'file'
+
+# --- useful extras ---------------------------------------------------------
+#
+# Allow inline `// NOLINT(category/check)` comments. We still want
+# developers to explain *why* they suppressed a check.
+AllowMainFileIncludes: false
+CheckOptions:
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+  - key: readability-identifier-naming.ConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.MemberSuffix
+    value: '_'
+  - key: readability-identifier-naming.PrivateMemberSuffix
+    value: '_'
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+  - key: readability-identifier-naming.ConstexprVariableCase
+    value: UPPER_CASE
+  - key: cppcoreguidelines-special-member-functions.AllowSoleDefaultCtor
+    value: true
+  - key: cppcoreguidelines-special-member-functions.AllowMissingMoveFunctions
+    value: true
+...
