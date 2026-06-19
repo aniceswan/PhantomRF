@@ -75,8 +75,12 @@ jobs:
       - name: Run clang-tidy
         run: |
           set -euo pipefail
-          chmod +x tools/lint/run-clang-tidy.sh
-          ./tools/lint/run-clang-tidy.sh
+          # Use PlatformIO's `pio check` rather than the bare
+          # `tools/lint/run-clang-tidy.sh` because the script runs
+          # clang-tidy without a compilation database (Arduino / ESP-IDF
+          # headers + library paths aren't visible to it). `pio check`
+          # generates the right compile_commands.json under the hood.
+          pio check -e esp32s3-n16r8
 
   markdownlint:
     name: "markdownlint"
@@ -102,8 +106,7 @@ jobs:
             CONTRIBUTING.md \
             CODE_OF_CONDUCT.md \
             SECURITY.md \
-            DESIGN.md \
-            LICENSE
+            DESIGN.md
 
   shellcheck:
     name: "shellcheck"
