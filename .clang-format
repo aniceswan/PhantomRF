@@ -108,7 +108,7 @@ ReflowComments: true
 AccessModifierOffset: -4
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 FixNamespaceComments: true
-KeepEmptyLinesAtEOF: false
+# KeepEmptyLinesAtEOF: false  # clang-format 16+; we target clang-format-14
 StatementAttributeLikeMacros:
   - Q_UNUSED
   - Q_DECLARE_PRIVATE
