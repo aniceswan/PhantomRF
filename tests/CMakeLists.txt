@@ -5,13 +5,9 @@
 #  suite without going through PlatformIO. CI continues to use
 #  `pio test -e native`; this file is a developer convenience.
 #
-#  Layout:
-#      tests/
-#      ├── CMakeLists.txt           # this file
-#      ├── unit/
-#      │   └── CMakeLists.txt       # builds the test executable
-#      ├── native_mock.{h,cpp}      # the host-side Arduino/ESP32 mocks
-#      └── test_*.cpp               # the test files themselves
+#  The PlatformIO test layout (test/test_xxx/main.cpp) and the CMake
+#  layout (tests/test_*.cpp) point at the same source files via the
+#  `unit/` shim. Adjust both if the layout changes.
 #
 #  Build:
 #      cmake -S tests -B build

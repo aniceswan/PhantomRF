@@ -15,7 +15,9 @@
 set(PHM_TEST_SRCS
     # Mocks — first, so test files can use them.
     ${CMAKE_CURRENT_SOURCE_DIR}/../native_mock.cpp
-    # Tests
+    # Tests (the actual test_*.cpp files live in tests/ root for the
+    # CMake build; the PlatformIO test layout re-exports them from
+    # test/test_xxx/main.cpp for CI)
     ${CMAKE_CURRENT_SOURCE_DIR}/../test_channel_math.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../test_frame_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../test_settings.cpp
